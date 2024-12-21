@@ -336,14 +336,14 @@ func main() {
 
 			debug("Closest proteine: %+v\n", closestProteine)
 
-			// find the neighbor of the closest proteine that is closest to the target protein
+			// find the neighbor of the closest organ that is the closest to the closest proteine
 			var closestNeighbor Coord
 			minDistance = 1000
 
 			for _, offset := range offsets {
-				coord := Coord{closestProteine.coord.x + offset.x, closestProteine.coord.y + offset.y}
+				coord := Coord{closestOrgan.coord.x + offset.x, closestOrgan.coord.y + offset.y}
 				if coord.x >= 0 && coord.x < width && coord.y >= 0 && coord.y < height {
-					if grid[coord.y][coord.x] == -1 {
+					if grid[coord.y][coord.x] == -1 || entities[grid[coord.y][coord.x]]._type == PROTEINE_A {
 						dist := distance(coord, closestProteine.coord)
 						if dist < minDistance {
 							minDistance = dist
