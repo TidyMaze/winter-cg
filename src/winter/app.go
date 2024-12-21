@@ -179,6 +179,20 @@ func parseDir(dir string) Dir {
 	panic(fmt.Sprintf("Unknown dir %s", dir))
 }
 
+func showDir(dir Dir) string {
+	switch dir {
+	case N:
+		return "N"
+	case s:
+		return "S"
+	case E:
+		return "E"
+	case W:
+		return "W"
+	}
+	panic(fmt.Sprintf("Unknown dir %d", dir))
+}
+
 func parseType(_type string) EntityType {
 	switch _type {
 	case "WALL":
@@ -378,8 +392,25 @@ func main() {
 
 			debug("Closest neighbor: %+v\n", closestNeighbor)
 
-			// send the command
-			fmt.Printf("GROW %d %d %d BASIC\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y)
+			if minDistance == 1 {
+				// put a harvester facing the proteine
+				harvesterDir := N
+				if closestNeighbor.x < closestProteine.coord.x {
+					harvesterDir = E
+				} else if closestNeighbor.x > closestProteine.coord.x {
+					harvesterDir = W
+				} else if closestNeighbor.y < closestProteine.coord.y {
+					harvesterDir = s
+				} else if closestNeighbor.y > closestProteine.coord.y {
+					harvesterDir = N
+				}
+
+				fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
+			} else {
+				// grow a basic organ
+				fmt.Printf("GROW %d %d %d BASIC\n", closestOrgan.organId, closestNeighbor.x,
+					closestNeighbor.y)
+			}
 		}
 	}
 }
