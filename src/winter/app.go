@@ -115,14 +115,29 @@ type Dir int
 const (
 	N Dir = iota
 	s
-	E
 	W
+	E
+)
+
+var offsets = []Coord{
+	{0, -1},
+	{0, 1},
+	{-1, 0},
+	{1, 0},
+}
+
+type Owner int
+
+const (
+	ME Owner = iota
+	OPPONENT
+	NONE
 )
 
 type Entity struct {
 	coord         Coord
 	_type         EntityType
-	owner         int
+	owner         Owner
 	organId       int
 	organDir      Dir
 	organParentId int
@@ -157,8 +172,31 @@ func parseType(_type string) EntityType {
 	panic(fmt.Sprintf("Unknown type %s", _type))
 }
 
+func parseOwner(owner int) Owner {
+	switch owner {
+	case 1:
+		return ME
+	case 0:
+		return OPPONENT
+	case -1:
+		return NONE
+	}
+	panic(fmt.Sprintf("Unknown owner %d", owner))
+}
+
 func debug(msg string, v ...interface{}) {
 	fmt.Fprintf(os.Stderr, msg, v...)
+}
+
+func distance(a, b Coord) int {
+	return abs(a.x-b.x) + abs(a.y-b.y)
+}
+
+func abs(a int) int {
+	if a < 0 {
+		return -a
+	}
+	return a
 }
 
 func main() {
@@ -200,7 +238,7 @@ func main() {
 			entity := Entity{
 				coord:         Coord{x, y},
 				_type:         parseType(_type),
-				owner:         owner,
+				owner:         parseOwner(owner),
 				organId:       organId,
 				organDir:      N,
 				organParentId: organParentId,
@@ -254,10 +292,71 @@ func main() {
 		var requiredActionsCount int
 		fmt.Scan(&requiredActionsCount)
 
+		debug("Required actions count: %d\n", requiredActionsCount)
+
 		for i := 0; i < requiredActionsCount; i++ {
 
-			// fmt.Fprintln(os.Stderr, "Debug messages...")
-			fmt.Println("WAIT") // Write action to stdout
+			// get the first root
+			var root Entity
+			for _, entity := range entities {
+				if entity._type == ROOT && entity.owner == ME {
+					root = entity
+					break
+				}
+			}
+
+			debug("Root: %+v\n", root)
+
+			// find all organs that have the organRootId equal to the root.organId
+			var organs []Entity
+			for _, entity := range entities {
+				if entity.organRootId == root.organId {
+					organs = append(organs, entity)
+				}
+			}
+
+			debug("Organs: %+v\n", organs)
+
+			// find the prootein that is the closest from any of the organs
+			var closestProteine Entity
+			var closestOrgan Entity
+			minDistance := 1000
+			for _, entity := range entities {
+				if entity._type == PROTEINE_A {
+					for _, organ := range organs {
+						dist := distance(entity.coord, organ.coord)
+						if dist < minDistance {
+							minDistance = dist
+							closestProteine = entity
+							closestOrgan = organ
+						}
+					}
+				}
+			}
+
+			debug("Closest proteine: %+v\n", closestProteine)
+
+			// find the neighbor of the closest proteine that is closest to the target protein
+			var closestNeighbor Coord
+			minDistance = 1000
+
+			for _, offset := range offsets {
+				coord := Coord{closestProteine.coord.x + offset.x, closestProteine.coord.y + offset.y}
+				if coord.x >= 0 && coord.x < width && coord.y >= 0 && coord.y < height {
+					if grid[coord.y][coord.x] == -1 {
+						dist := distance(coord, closestProteine.coord)
+						if dist < minDistance {
+							minDistance = dist
+							closestNeighbor = coord
+						}
+					}
+				}
+			}
+
+			debug("Closest neighbor: %+v\n", closestNeighbor)
+
+			// send the command
+			fmt.Printf("GROW %d %d %d BASIC\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y)
 		}
 	}
 }
