@@ -127,6 +127,7 @@ const (
 	WALL EntityType = iota
 	ROOT
 	BASIC
+	HARVESTER
 	PROTEINE_A
 )
 
@@ -186,6 +187,8 @@ func parseType(_type string) EntityType {
 		return ROOT
 	case "BASIC":
 		return BASIC
+	case "HARVESTER":
+		return HARVESTER
 	case "A":
 		return PROTEINE_A
 	}
