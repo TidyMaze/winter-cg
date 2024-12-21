@@ -1,0 +1,263 @@
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+/**
+ * Grow and multiply your organisms to end up larger than your opponent.
+
+ Grow your organism to become the largest!
+Grow your organism to become the largest!
+ 	Rules
+The game is played on a grid.
+
+For the lower leagues, you need only beat the Boss in specific situations.
+
+
+🔵🔴 The Organisms
+Organisms are made up of organs that take up one tile of space on the game grid.
+
+
+Each player starts with a ROOT type organ. In this league, your organism can GROW a new BASIC type organ on each turn in order to cover a larger area.
+
+
+A new organ can grow from any existing organ, onto an empty adjacent location.
+
+
+In order to GROW, your organism needs proteins.
+
+In this league, you start with 10 proteins of type A. Growing 1 BASIC organ requires 1 of these proteins.
+
+
+You can obtain more proteins by growing an organ onto a tile of the grid containing a protein source, these are tiles with a letter in them. Doing so will grant you 3 proteins of the corresponding type.
+
+
+Grow more organs than the Boss to advance to the next league.
+
+
+You organism can receive the following command:
+
+GROW id x y type: creates a new organ at location x, y from organ with id id. If the target location is not a neighbour of id, the organ will be created on the shortest path to x, y.
+
+This command will create new BASIC organ with the ROOT organ as its parent.
+
+See the Game Protocol section for more information on sending commands to your organism.
+
+
+
+⛔ Game end
+The game stops when it detects progress can no longer be made or after 100 turns.
+
+
+Victory Conditions
+The winner is the player with the most tiles occupied by one of their organs.
+Defeat Conditions
+Your program does not provide a command in the alloted time or one of the commands is invalid.
+
+🐞 Debugging tips
+Hover over the grid to see extra information on the organ under your mouse.
+Append text after any command and that text will appear above your organism.
+Press the gear icon on the viewer to access extra display options.
+Use the keyboard to control the action: space to play/pause, arrows to step 1 frame at a time.
+Click to expand
+ 	Game Protocol
+Initialization Input
+First line: two integers width and height for the size of the grid.
+Input for One Game Turn
+First line: one integer entityCount for the number of entities on the grid.
+Next entityCount lines: the following 7 inputs for each entity:
+x: X coordinate (0 is leftmost)
+y: Y coordinate (0 is topmost)
+type:
+WALL for a wall
+ROOT for a ROOT type organ
+BASIC for a BASIC type organ
+A for an A protein source
+owner:
+1 if you are the owner of this organ
+0 if your opponent owns this organ
+-1 if this is not an organ
+organId: unique id of this entity if it is an organ, 0 otherwise
+organDir: N, W, S, or E, not used in this league
+organParentId: if it is an organ, the organId of the organ that this organ grew from (0 for ROOT organs), else 0.
+organRootId: if it is an organ, the organId of the ROOT that this organ originally grew from, else 0.
+Next line: 4 integers: myA,myB,myC,myD for the amount of each protein type you have.
+Next line: 4 integers: oppA,oppB,oppC,oppD for the amount of each protein type your opponent has.
+Next line: the integer requiredActionsCount which equals 1 in this league.
+Output
+A single line with your action: GROW id x y type : attempt to grow a new organ of type type at location x, y from organ with id id. If the target location is not a neighbour of id, the organ will be created on the shortest path to x, y.
+
+What is in store for me in the higher leagues?
+
+The extra rules available in higher leagues are:
+An organ type to gather more proteins
+An organ type to attack your opponent
+An organ type to spawn more organisms
+ **/
+
+type Coord struct {
+	x, y int
+}
+
+type EntityType int
+
+const (
+	WALL EntityType = iota
+	ROOT
+	BASIC
+	PROTEINE_A
+)
+
+type Dir int
+
+const (
+	N Dir = iota
+	s
+	E
+	W
+)
+
+type Entity struct {
+	coord         Coord
+	_type         EntityType
+	owner         int
+	organId       int
+	organDir      Dir
+	organParentId int
+	organRootId   int
+}
+
+func parseDir(dir string) Dir {
+	switch dir {
+	case "N":
+		return N
+	case "S":
+		return s
+	case "E":
+		return E
+	case "W":
+		return W
+	}
+	panic(fmt.Sprintf("Unknown dir %s", dir))
+}
+
+func parseType(_type string) EntityType {
+	switch _type {
+	case "WALL":
+		return WALL
+	case "ROOT":
+		return ROOT
+	case "BASIC":
+		return BASIC
+	case "A":
+		return PROTEINE_A
+	}
+	panic(fmt.Sprintf("Unknown type %s", _type))
+}
+
+func debug(msg string, v ...interface{}) {
+	fmt.Fprintf(os.Stderr, msg, v...)
+}
+
+func main() {
+	// width: columns in the game grid
+	// height: rows in the game grid
+	var width, height int
+	fmt.Scan(&width, &height)
+
+	for {
+
+		grid := make([][]int, height)
+		for i := 0; i < height; i++ {
+			grid[i] = make([]int, width)
+			for j := 0; j < width; j++ {
+				grid[i][j] = -1
+			}
+		}
+
+		var entityCount int
+		fmt.Scan(&entityCount)
+
+		entities := make([]Entity, entityCount)
+
+		for i := 0; i < entityCount; i++ {
+			// y: grid coordinate
+			// _type: WALL, ROOT, BASIC, TENTACLE, HARVESTER, SPORER, A, B, C, D
+			// owner: 1 if your organ, 0 if enemy organ, -1 if neither
+			// organId: id of this entity if it's an organ, 0 otherwise
+			// organDir: N,E,S,W or X if not an organ
+			var x, y int
+			var _type string
+			var owner, organId int
+			var organDir string
+			var organParentId, organRootId int
+			fmt.Scan(&x, &y, &_type, &owner, &organId, &organDir, &organParentId, &organRootId)
+
+			// debug("x: %d, y: %d, type: %s, owner: %d, organId: %d, organDir: %s, organParentId: %d, organRootId: %d\n", x, y, _type, owner, organId, organDir, organParentId, organRootId)
+
+			entity := Entity{
+				coord:         Coord{x, y},
+				_type:         parseType(_type),
+				owner:         owner,
+				organId:       organId,
+				organDir:      N,
+				organParentId: organParentId,
+				organRootId:   organRootId,
+			}
+
+			entities[i] = entity
+
+			grid[y][x] = i
+		}
+
+		// debug the entities
+		// for _, entity := range entities {
+		// 	// debug("Entity: %+v\n", entity)
+		// }
+
+		// print the grid
+		for i := 0; i < height; i++ {
+			for j := 0; j < width; j++ {
+				fmt.Fprintf(os.Stderr, "%d ", grid[i][j])
+			}
+			fmt.Fprintf(os.Stderr, "\n")
+		}
+
+		myProteins := make([]int, 4)
+		oppProteins := make([]int, 4)
+
+		// myD: your protein stock
+		var myA, myB, myC, myD int
+		fmt.Scan(&myA, &myB, &myC, &myD)
+
+		debug("My proteins: A: %d, B: %d, C: %d, D: %d\n", myA, myB, myC, myD)
+
+		myProteins[0] = myA
+		myProteins[1] = myB
+		myProteins[2] = myC
+		myProteins[3] = myD
+
+		// oppD: opponent's protein stock
+		var oppA, oppB, oppC, oppD int
+		fmt.Scan(&oppA, &oppB, &oppC, &oppD)
+
+		debug("Opponent proteins: A: %d, B: %d, C: %d, D: %d\n", oppA, oppB, oppC, oppD)
+
+		oppProteins[0] = oppA
+		oppProteins[1] = oppB
+		oppProteins[2] = oppC
+		oppProteins[3] = oppD
+
+		// requiredActionsCount: your number of organisms, output an action for each one in any order
+		var requiredActionsCount int
+		fmt.Scan(&requiredActionsCount)
+
+		for i := 0; i < requiredActionsCount; i++ {
+
+			// fmt.Fprintln(os.Stderr, "Debug messages...")
+			fmt.Println("WAIT") // Write action to stdout
+		}
+	}
+}
