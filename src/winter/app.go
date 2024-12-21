@@ -371,45 +371,66 @@ func main() {
 				}
 			}
 
-			debug("Closest proteine: %+v\n", closestProteine)
-
-			// find the neighbor of the closest organ that is the closest to the closest proteine
-			var closestNeighbor Coord
-			minDistance = 1000
-
-			for _, offset := range offsets {
-				coord := Coord{closestOrgan.coord.x + offset.x, closestOrgan.coord.y + offset.y}
-				if coord.x >= 0 && coord.x < width && coord.y >= 0 && coord.y < height {
-					if grid[coord.y][coord.x] == -1 || entities[grid[coord.y][coord.x]]._type == PROTEINE_A {
-						dist := distance(coord, closestProteine.coord)
-						if dist < minDistance {
-							minDistance = dist
-							closestNeighbor = coord
+			if minDistance == 1000 {
+				// there is no proteine on the grid, just grow a basic organ to the closest free cell from the root
+				var closestFreeCell Coord
+				minDistance = 1000
+				for i := 0; i < height; i++ {
+					for j := 0; j < width; j++ {
+						if grid[i][j] == -1 {
+							dist := distance(root.coord, Coord{j, i})
+							if dist < minDistance {
+								minDistance = dist
+								closestFreeCell = Coord{j, i}
+							}
 						}
 					}
 				}
-			}
 
-			debug("Closest neighbor: %+v\n", closestNeighbor)
+				debug("Closest free cell: %+v\n", closestFreeCell)
 
-			if minDistance == 1 {
-				// put a harvester facing the proteine
-				harvesterDir := N
-				if closestNeighbor.x < closestProteine.coord.x {
-					harvesterDir = E
-				} else if closestNeighbor.x > closestProteine.coord.x {
-					harvesterDir = W
-				} else if closestNeighbor.y < closestProteine.coord.y {
-					harvesterDir = s
-				} else if closestNeighbor.y > closestProteine.coord.y {
-					harvesterDir = N
+				fmt.Printf("GROW %d %d %d BASIC\n", root.organId, closestFreeCell.x, closestFreeCell.y)
+			} else {
+				debug("Closest proteine: %+v\n", closestProteine)
+
+				// find the neighbor of the closest organ that is the closest to the closest proteine
+				var closestNeighbor Coord
+				minDistance = 1000
+
+				for _, offset := range offsets {
+					coord := Coord{closestOrgan.coord.x + offset.x, closestOrgan.coord.y + offset.y}
+					if coord.x >= 0 && coord.x < width && coord.y >= 0 && coord.y < height {
+						if grid[coord.y][coord.x] == -1 || entities[grid[coord.y][coord.x]]._type == PROTEINE_A {
+							dist := distance(coord, closestProteine.coord)
+							if dist < minDistance {
+								minDistance = dist
+								closestNeighbor = coord
+							}
+						}
+					}
 				}
 
-				fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
-			} else {
-				// grow a basic organ
-				fmt.Printf("GROW %d %d %d BASIC\n", closestOrgan.organId, closestNeighbor.x,
-					closestNeighbor.y)
+				debug("Closest neighbor: %+v\n", closestNeighbor)
+
+				if minDistance == 1 {
+					// put a harvester facing the proteine
+					harvesterDir := N
+					if closestNeighbor.x < closestProteine.coord.x {
+						harvesterDir = E
+					} else if closestNeighbor.x > closestProteine.coord.x {
+						harvesterDir = W
+					} else if closestNeighbor.y < closestProteine.coord.y {
+						harvesterDir = s
+					} else if closestNeighbor.y > closestProteine.coord.y {
+						harvesterDir = N
+					}
+
+					fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
+				} else {
+					// grow a basic organ
+					fmt.Printf("GROW %d %d %d BASIC\n", closestOrgan.organId, closestNeighbor.x,
+						closestNeighbor.y)
+				}
 			}
 		}
 	}
