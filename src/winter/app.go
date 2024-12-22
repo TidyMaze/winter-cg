@@ -181,11 +181,8 @@ func (c Coord) add(offset Coord) Coord {
 }
 
 func (c Coord) isValid() bool {
-	return c.x >= 0 && c.x < Width && c.y >= 0 && c.y < Height
+	return c.x >= 0 && c.x < state.Width && c.y >= 0 && c.y < state.Height
 }
-
-var Height int
-var Width int
 
 type EntityType int
 
@@ -233,6 +230,18 @@ type Entity struct {
 	organParentId int
 	organRootId   int
 }
+
+type State struct {
+	Height               int
+	Width                int
+	Entities             []Entity
+	Grid                 [][]int
+	MyProteins           []int
+	OppProteins          []int
+	RequiredActionsCount int
+}
+
+var state State
 
 func parseDir(dir string) Dir {
 	switch dir {
@@ -313,22 +322,22 @@ func abs(a int) int {
 func main() {
 	// width: columns in the game grid
 	// height: rows in the game grid
-	fmt.Scan(&Width, &Height)
+	fmt.Scan(&state.Width, &state.Height)
 
 	for {
 
-		grid := make([][]int, Height)
-		for i := 0; i < Height; i++ {
-			grid[i] = make([]int, Width)
-			for j := 0; j < Width; j++ {
-				grid[i][j] = -1
+		state.Grid = make([][]int, state.Height)
+		for i := 0; i < state.Height; i++ {
+			state.Grid[i] = make([]int, state.Width)
+			for j := 0; j < state.Width; j++ {
+				state.Grid[i][j] = -1
 			}
 		}
 
 		var entityCount int
 		fmt.Scan(&entityCount)
 
-		entities := make([]Entity, entityCount)
+		state.Entities = make([]Entity, entityCount)
 
 		for i := 0; i < entityCount; i++ {
 			// y: grid coordinate
@@ -355,26 +364,26 @@ func main() {
 				organRootId:   organRootId,
 			}
 
-			entities[i] = entity
+			state.Entities[i] = entity
 
-			grid[y][x] = i
+			state.Grid[y][x] = i
 		}
 
 		// debug the entities
-		// for _, entity := range entities {
+		// for _, entity := range state.Entities {
 		// 	// debug("Entity: %+v\n", entity)
 		// }
 
 		// print the grid
-		for i := 0; i < Height; i++ {
-			for j := 0; j < Width; j++ {
-				fmt.Fprintf(os.Stderr, "%d ", grid[i][j])
+		for i := 0; i < state.Height; i++ {
+			for j := 0; j < state.Width; j++ {
+				fmt.Fprintf(os.Stderr, "%d ", state.Grid[i][j])
 			}
 			fmt.Fprintf(os.Stderr, "\n")
 		}
 
-		myProteins := make([]int, 4)
-		oppProteins := make([]int, 4)
+		state.MyProteins = make([]int, 4)
+		state.OppProteins = make([]int, 4)
 
 		// myD: your protein stock
 		var myA, myB, myC, myD int
@@ -382,10 +391,10 @@ func main() {
 
 		debug("My proteins: A: %d, B: %d, C: %d, D: %d\n", myA, myB, myC, myD)
 
-		myProteins[0] = myA
-		myProteins[1] = myB
-		myProteins[2] = myC
-		myProteins[3] = myD
+		state.MyProteins[0] = myA
+		state.MyProteins[1] = myB
+		state.MyProteins[2] = myC
+		state.MyProteins[3] = myD
 
 		// oppD: opponent's protein stock
 		var oppA, oppB, oppC, oppD int
@@ -393,10 +402,10 @@ func main() {
 
 		debug("Opponent proteins: A: %d, B: %d, C: %d, D: %d\n", oppA, oppB, oppC, oppD)
 
-		oppProteins[0] = oppA
-		oppProteins[1] = oppB
-		oppProteins[2] = oppC
-		oppProteins[3] = oppD
+		state.OppProteins[0] = oppA
+		state.OppProteins[1] = oppB
+		state.OppProteins[2] = oppC
+		state.OppProteins[3] = oppD
 
 		// requiredActionsCount: your number of organisms, output an action for each one in any order
 		var requiredActionsCount int
@@ -408,7 +417,7 @@ func main() {
 
 			// get the first root
 			var root Entity
-			for _, entity := range entities {
+			for _, entity := range state.Entities {
 				if entity._type == ROOT && entity.owner == ME {
 					root = entity
 					break
@@ -419,7 +428,7 @@ func main() {
 
 			// find all organs that have the organRootId equal to the root.organId
 			var organs []Entity
-			for _, entity := range entities {
+			for _, entity := range state.Entities {
 				if entity.organRootId == root.organId {
 					organs = append(organs, entity)
 				}
@@ -430,15 +439,15 @@ func main() {
 			// find the non-harvested proteins
 			var nonHarvestedProteins []Entity
 
-			for _, entity := range entities {
+			for _, entity := range state.Entities {
 				if entity._type == PROTEIN_A {
 					// find my neighbor harvesters of this protein (must be facing the protein)
 					myHarvesters := make([]Entity, 0)
 					for _, offset := range offsets {
 						coord := entity.coord.add(offset)
 						if coord.isValid() {
-							if grid[coord.y][coord.x] != -1 {
-								neighbor := entities[grid[coord.y][coord.x]]
+							if state.Grid[coord.y][coord.x] != -1 {
+								neighbor := state.Entities[state.Grid[coord.y][coord.x]]
 								if neighbor._type == HARVESTER && neighbor.owner == ME {
 									if coord.y < entity.coord.y && neighbor.organDir == S {
 										myHarvesters = append(myHarvesters, neighbor)
@@ -469,15 +478,15 @@ func main() {
 
 			if len(nonHarvestedProteins) > 0 {
 
-				if canGrow(myProteins, SPORER) {
+				if canGrow(state.MyProteins, SPORER) {
 					// check if the closest organ can reach the closest protein using sporers
 
 					debug("Can grow a sporer\n")
 
 					// build a map of the intersting spore cells (cells that are at distance max 1 from a non harvested protein)
-					sporeCells := make([][]bool, Height)
-					for i := 0; i < Height; i++ {
-						sporeCells[i] = make([]bool, Width)
+					sporeCells := make([][]bool, state.Height)
+					for i := 0; i < state.Height; i++ {
+						sporeCells[i] = make([]bool, state.Width)
 					}
 
 					for _, protein := range nonHarvestedProteins {
@@ -490,8 +499,8 @@ func main() {
 					}
 
 					debug("Spore cells:\n", sporeCells)
-					for i := 0; i < Height; i++ {
-						for j := 0; j < Width; j++ {
+					for i := 0; i < state.Height; i++ {
+						for j := 0; j < state.Width; j++ {
 							if sporeCells[i][j] {
 								fmt.Fprintf(os.Stderr, "X ")
 							} else {
@@ -507,7 +516,7 @@ func main() {
 					var closestProtein Entity
 					var closestOrgan Entity
 					minDistance := 1000
-					for _, entity := range entities {
+					for _, entity := range state.Entities {
 						if entity._type == PROTEIN_A && !isAlreadyHarvested(entity, nonHarvestedProteins) {
 							for _, organ := range organs {
 								dist := distance(entity.coord, organ.coord)
@@ -530,7 +539,7 @@ func main() {
 						coord := closestOrgan.coord.add(offset)
 						if coord.isValid() {
 							// never grow on a protein
-							if grid[coord.y][coord.x] == -1 {
+							if state.Grid[coord.y][coord.x] == -1 {
 								dist := distance(coord, closestProtein.coord)
 								if dist < minDistanceFromNeighbor {
 									minDistanceFromNeighbor = dist
@@ -566,7 +575,7 @@ func main() {
 				// there is no protein on the grid, find a cell that is at the frontier of players' organisms
 
 				var enemyOrgans []Entity
-				for _, entity := range entities {
+				for _, entity := range state.Entities {
 					if entity.owner == OPPONENT && entity._type == BASIC {
 						enemyOrgans = append(enemyOrgans, entity)
 					}
@@ -579,9 +588,9 @@ func main() {
 				var bestOfEnemyOrgans Entity
 				bestScore := -1000
 
-				for i := 0; i < Height; i++ {
-					for j := 0; j < Width; j++ {
-						if grid[i][j] == -1 {
+				for i := 0; i < state.Height; i++ {
+					for j := 0; j < state.Width; j++ {
+						if state.Grid[i][j] == -1 {
 							cell := Coord{j, i}
 
 							// find the closest of my organs
