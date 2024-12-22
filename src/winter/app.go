@@ -571,17 +571,17 @@ func sendActions() {
 
 					for _, organ := range organs {
 						for _, offset := range offsets {
-							coord := organ.coord.add(offset)
-							if coord.isValid() && state.Grid[coord.y][coord.x] == -1 {
+							sporerCoord := organ.coord.add(offset)
+							if sporerCoord.isValid() && state.Grid[sporerCoord.y][sporerCoord.x] == -1 {
 								// simulate the spore in all directions until it reaches a spore cell
 								for _, dir := range []Dir{N, S, W, E} {
-									sporeCoord := findSporeCellInDirection(coord, dir, sporeCells)
+									sporeCoord := findSporeCellInDirection(sporerCoord, dir, sporeCells)
 
-									if sporeCoord.isValid() && distance(coord, sporeCoord) > 1 {
-										debug("Organ: %+v can reach spore cell: %+v after sporing in direction: %s from cell: %+v\n", organ, sporeCoord, showDir(dir), coord)
+									if sporeCoord.isValid() && distance(sporerCoord, sporeCoord) > 1 {
+										debug("Organ: %+v can reach spore cell: %+v after sporing in direction: %s from cell: %+v\n", organ, sporeCoord, showDir(dir), sporerCoord)
 										sporerPlans = append(sporerPlans, SporePlan{
 											organ:          organ,
-											newSporerCoord: coord,
+											newSporerCoord: sporerCoord,
 											sporerDir:      dir,
 											target:         sporeCoord,
 										})
