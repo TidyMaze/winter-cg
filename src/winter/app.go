@@ -533,7 +533,7 @@ func sendActions() {
 				for _, organ := range organs {
 					for _, offset := range offsets {
 						coord := organ.coord.add(offset)
-						if coord.isValid() {
+						if coord.isValid() && state.Grid[coord.y][coord.x] == -1 {
 							// simulate the spore in all directions until it reaches a spore cell
 							for _, dir := range []Dir{N, S, W, E} {
 								sporeCoord := coord
@@ -563,7 +563,10 @@ func sendActions() {
 				}
 
 				if len(sporerPlans) > 0 {
-					debug("Spore plans: %+v\n", sporerPlans)
+					debug("Spore plans:\n")
+					for _, plan := range sporerPlans {
+						debug("Organ: %+v, new sporer coord: %+v, sporer dir: %s, target: %+v\n", plan.organ, plan.newSporerCoord, showDir(plan.sporerDir), plan.target)
+					}
 
 					// choose the best spore plan
 					bestPlan := sporerPlans[0]
