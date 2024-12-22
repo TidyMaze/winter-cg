@@ -327,6 +327,20 @@ func parseType(_type string) EntityType {
 	panic(fmt.Sprintf("Unknown type %s", _type))
 }
 
+func showOrganType(_type EntityType) string {
+	switch _type {
+	case BASIC:
+		return "BASIC"
+	case HARVESTER:
+		return "HARVESTER"
+	case TENTACLE:
+		return "TENTACLE"
+	case SPORER:
+		return "SPORER"
+	}
+	panic(fmt.Sprintf("Unknown organ type %d", _type))
+}
+
 func parseOwner(owner int) Owner {
 	switch owner {
 	case 1:
@@ -654,7 +668,16 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity) {
 		harvesterDir := findDirRelativeTo(closestNeighbor, closestProtein.coord)
 		fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
 	} else {
-		fmt.Printf("GROW %d %d %d BASIC\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y)
+		growType := EntityType(-1)
+
+		for _, _type := range []EntityType{BASIC, HARVESTER, TENTACLE, SPORER} {
+			if canGrow(state.MyProteins, _type) {
+				growType = _type
+				break
+			}
+		}
+
+		fmt.Printf("GROW %d %d %d %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showOrganType(growType))
 	}
 }
 
