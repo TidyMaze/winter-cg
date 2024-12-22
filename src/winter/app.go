@@ -408,6 +408,233 @@ func parseTurnState() {
 	debug("Required actions count: %d\n", requiredActionsCount)
 }
 
+func sendActions() {
+	for i := 0; i < state.RequiredActionsCount; i++ {
+
+		// get the first root
+		var root Entity
+		for _, entity := range state.Entities {
+			if entity._type == ROOT && entity.owner == ME {
+				root = entity
+				break
+			}
+		}
+
+		debug("Root: %+v\n", root)
+
+		// find all organs that have the organRootId equal to the root.organId
+		var organs []Entity
+		for _, entity := range state.Entities {
+			if entity.organRootId == root.organId {
+				organs = append(organs, entity)
+			}
+
+		}
+		debug("Organs: %+v\n", organs)
+
+		// find the non-harvested proteins
+		var nonHarvestedProteins []Entity
+
+		for _, entity := range state.Entities {
+			if entity._type == PROTEIN_A {
+				// find my neighbor harvesters of this protein (must be facing the protein)
+				myHarvesters := make([]Entity, 0)
+				for _, offset := range offsets {
+					coord := entity.coord.add(offset)
+					if coord.isValid() {
+						if state.Grid[coord.y][coord.x] != -1 {
+							neighbor := state.Entities[state.Grid[coord.y][coord.x]]
+							if neighbor._type == HARVESTER && neighbor.owner == ME {
+								if coord.y < entity.coord.y && neighbor.organDir == S {
+									myHarvesters = append(myHarvesters, neighbor)
+								} else if coord.y > entity.coord.y && neighbor.organDir == N {
+									myHarvesters = append(myHarvesters, neighbor)
+								} else if coord.x < entity.coord.x && neighbor.organDir == E {
+									myHarvesters = append(myHarvesters, neighbor)
+								} else if coord.x > entity.coord.x && neighbor.organDir == W {
+									myHarvesters = append(myHarvesters, neighbor)
+								} else {
+									debug("Neighbor harvester %+v is not facing the protein %+v\n", neighbor, entity)
+								}
+							}
+						}
+					}
+				}
+
+				if len(myHarvesters) > 0 {
+					debug("My harvesters for protein: %+v: %+v\n", entity, myHarvesters)
+				} else {
+					debug("No harvesters for protein: %+v\n", entity)
+					nonHarvestedProteins = append(nonHarvestedProteins, entity)
+				}
+			}
+		}
+
+		debug("Non-harvested proteins: %+v\n", nonHarvestedProteins)
+
+		if len(nonHarvestedProteins) > 0 {
+
+			if canGrow(state.MyProteins, SPORER) {
+				// check if the closest organ can reach the closest protein using sporers
+
+				debug("Can grow a sporer\n")
+
+				// build a map of the intersting spore cells (cells that are at distance max 1 from a non harvested protein)
+				sporeCells := make([][]bool, state.Height)
+				for i := 0; i < state.Height; i++ {
+					sporeCells[i] = make([]bool, state.Width)
+				}
+
+				for _, protein := range nonHarvestedProteins {
+					for _, offset := range offsets {
+						coord := protein.coord.add(offset)
+						if coord.isValid() {
+							sporeCells[coord.y][coord.x] = true
+						}
+					}
+				}
+
+				debug("Spore cells:\n")
+				for i := 0; i < state.Height; i++ {
+					for j := 0; j < state.Width; j++ {
+						if sporeCells[i][j] {
+							fmt.Fprintf(os.Stderr, "X ")
+						} else {
+							fmt.Fprintf(os.Stderr, "  ")
+						}
+					}
+					fmt.Fprintf(os.Stderr, "\n")
+				}
+
+				// find any neighbor of my organs that can reach a cell that is at distance 1 from a protein
+			} else {
+				// find the protein that is the closest from any of the organs and that is not harvested
+				var closestProtein Entity
+				var closestOrgan Entity
+				minDistance := 1000
+				for _, entity := range state.Entities {
+					if entity._type == PROTEIN_A && !isAlreadyHarvested(entity, nonHarvestedProteins) {
+						for _, organ := range organs {
+							dist := distance(entity.coord, organ.coord)
+							if dist < minDistance {
+								minDistance = dist
+								closestProtein = entity
+								closestOrgan = organ
+							}
+						}
+					}
+				}
+
+				debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
+
+				// find the neighbor of the closest organ that is the closest to the closest protein
+				var closestNeighbor Coord
+				minDistanceFromNeighbor := 1000
+
+				for _, offset := range offsets {
+					coord := closestOrgan.coord.add(offset)
+					if coord.isValid() {
+						// never grow on a protein
+						if state.Grid[coord.y][coord.x] == -1 {
+							dist := distance(coord, closestProtein.coord)
+							if dist < minDistanceFromNeighbor {
+								minDistanceFromNeighbor = dist
+								closestNeighbor = coord
+							}
+						}
+					}
+				}
+
+				debug("Closest neighbor: %+v\n", closestNeighbor)
+
+				if minDistanceFromNeighbor == 1 {
+					// put a harvester facing the protein
+					harvesterDir := N
+					if closestNeighbor.x < closestProtein.coord.x {
+						harvesterDir = E
+					} else if closestNeighbor.x > closestProtein.coord.x {
+						harvesterDir = W
+					} else if closestNeighbor.y < closestProtein.coord.y {
+						harvesterDir = S
+					} else if closestNeighbor.y > closestProtein.coord.y {
+						harvesterDir = N
+					}
+
+					fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
+				} else {
+					// grow a basic organ to get closer to the protein
+					fmt.Printf("GROW %d %d %d BASIC\n", closestOrgan.organId, closestNeighbor.x,
+						closestNeighbor.y)
+				}
+			}
+		} else {
+			// there is no protein on the grid, find a cell that is at the frontier of players' organisms
+
+			var enemyOrgans []Entity
+			for _, entity := range state.Entities {
+				if entity.owner == OPPONENT && entity._type == BASIC {
+					enemyOrgans = append(enemyOrgans, entity)
+				}
+			}
+
+			debug("Enemy organs: %+v\n", enemyOrgans)
+
+			var bestCell Coord
+			var bestOfMyOrgans Entity
+			var bestOfEnemyOrgans Entity
+			bestScore := -1000
+
+			for i := 0; i < state.Height; i++ {
+				for j := 0; j < state.Width; j++ {
+					if state.Grid[i][j] == -1 {
+						cell := Coord{j, i}
+
+						// find the closest of my organs
+						minDistance := 1000
+						closestOfMyOrgans := Entity{}
+
+						for _, organ := range organs {
+							dist := distance(cell, organ.coord)
+							if dist < minDistance {
+								minDistance = dist
+								closestOfMyOrgans = organ
+							}
+						}
+
+						// find the closest of enemy organs
+						minDistance = 1000
+						closestOfEnemyOrgans := Entity{}
+
+						for _, organ := range enemyOrgans {
+							dist := distance(cell, organ.coord)
+							if dist < minDistance {
+								minDistance = dist
+								closestOfEnemyOrgans = organ
+							}
+						}
+
+						diffDist := distance(closestOfMyOrgans.coord, cell) - distance(closestOfEnemyOrgans.coord, cell)
+
+						// only keep if the cell is closest to one of my organs than to any of the enemy organs (score < 0) but with a score that is the closest to 0 (frontier)
+						if diffDist <= 0 {
+							if diffDist > bestScore {
+								bestScore = diffDist
+								bestCell = cell
+								bestOfMyOrgans = closestOfMyOrgans
+								bestOfEnemyOrgans = closestOfEnemyOrgans
+							}
+						}
+					}
+				}
+			}
+
+			debug("Grow target cell: %+v from organ: %+v and enemy organ: %+v\n", bestCell, bestOfMyOrgans, bestOfEnemyOrgans)
+
+			fmt.Printf("GROW %d %d %d BASIC\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y)
+		}
+	}
+}
+
 func main() {
 	// width: columns in the game grid
 	// height: rows in the game grid
@@ -415,231 +642,7 @@ func main() {
 
 	for {
 		parseTurnState()
-
-		for i := 0; i < state.RequiredActionsCount; i++ {
-
-			// get the first root
-			var root Entity
-			for _, entity := range state.Entities {
-				if entity._type == ROOT && entity.owner == ME {
-					root = entity
-					break
-				}
-			}
-
-			debug("Root: %+v\n", root)
-
-			// find all organs that have the organRootId equal to the root.organId
-			var organs []Entity
-			for _, entity := range state.Entities {
-				if entity.organRootId == root.organId {
-					organs = append(organs, entity)
-				}
-
-			}
-			debug("Organs: %+v\n", organs)
-
-			// find the non-harvested proteins
-			var nonHarvestedProteins []Entity
-
-			for _, entity := range state.Entities {
-				if entity._type == PROTEIN_A {
-					// find my neighbor harvesters of this protein (must be facing the protein)
-					myHarvesters := make([]Entity, 0)
-					for _, offset := range offsets {
-						coord := entity.coord.add(offset)
-						if coord.isValid() {
-							if state.Grid[coord.y][coord.x] != -1 {
-								neighbor := state.Entities[state.Grid[coord.y][coord.x]]
-								if neighbor._type == HARVESTER && neighbor.owner == ME {
-									if coord.y < entity.coord.y && neighbor.organDir == S {
-										myHarvesters = append(myHarvesters, neighbor)
-									} else if coord.y > entity.coord.y && neighbor.organDir == N {
-										myHarvesters = append(myHarvesters, neighbor)
-									} else if coord.x < entity.coord.x && neighbor.organDir == E {
-										myHarvesters = append(myHarvesters, neighbor)
-									} else if coord.x > entity.coord.x && neighbor.organDir == W {
-										myHarvesters = append(myHarvesters, neighbor)
-									} else {
-										debug("Neighbor harvester %+v is not facing the protein %+v\n", neighbor, entity)
-									}
-								}
-							}
-						}
-					}
-
-					if len(myHarvesters) > 0 {
-						debug("My harvesters for protein: %+v: %+v\n", entity, myHarvesters)
-					} else {
-						debug("No harvesters for protein: %+v\n", entity)
-						nonHarvestedProteins = append(nonHarvestedProteins, entity)
-					}
-				}
-			}
-
-			debug("Non-harvested proteins: %+v\n", nonHarvestedProteins)
-
-			if len(nonHarvestedProteins) > 0 {
-
-				if canGrow(state.MyProteins, SPORER) {
-					// check if the closest organ can reach the closest protein using sporers
-
-					debug("Can grow a sporer\n")
-
-					// build a map of the intersting spore cells (cells that are at distance max 1 from a non harvested protein)
-					sporeCells := make([][]bool, state.Height)
-					for i := 0; i < state.Height; i++ {
-						sporeCells[i] = make([]bool, state.Width)
-					}
-
-					for _, protein := range nonHarvestedProteins {
-						for _, offset := range offsets {
-							coord := protein.coord.add(offset)
-							if coord.isValid() {
-								sporeCells[coord.y][coord.x] = true
-							}
-						}
-					}
-
-					debug("Spore cells:\n")
-					for i := 0; i < state.Height; i++ {
-						for j := 0; j < state.Width; j++ {
-							if sporeCells[i][j] {
-								fmt.Fprintf(os.Stderr, "X ")
-							} else {
-								fmt.Fprintf(os.Stderr, "  ")
-							}
-						}
-						fmt.Fprintf(os.Stderr, "\n")
-					}
-
-					// find any neighbor of my organs that can reach a cell that is at distance 1 from a protein
-				} else {
-					// find the protein that is the closest from any of the organs and that is not harvested
-					var closestProtein Entity
-					var closestOrgan Entity
-					minDistance := 1000
-					for _, entity := range state.Entities {
-						if entity._type == PROTEIN_A && !isAlreadyHarvested(entity, nonHarvestedProteins) {
-							for _, organ := range organs {
-								dist := distance(entity.coord, organ.coord)
-								if dist < minDistance {
-									minDistance = dist
-									closestProtein = entity
-									closestOrgan = organ
-								}
-							}
-						}
-					}
-
-					debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
-
-					// find the neighbor of the closest organ that is the closest to the closest protein
-					var closestNeighbor Coord
-					minDistanceFromNeighbor := 1000
-
-					for _, offset := range offsets {
-						coord := closestOrgan.coord.add(offset)
-						if coord.isValid() {
-							// never grow on a protein
-							if state.Grid[coord.y][coord.x] == -1 {
-								dist := distance(coord, closestProtein.coord)
-								if dist < minDistanceFromNeighbor {
-									minDistanceFromNeighbor = dist
-									closestNeighbor = coord
-								}
-							}
-						}
-					}
-
-					debug("Closest neighbor: %+v\n", closestNeighbor)
-
-					if minDistanceFromNeighbor == 1 {
-						// put a harvester facing the protein
-						harvesterDir := N
-						if closestNeighbor.x < closestProtein.coord.x {
-							harvesterDir = E
-						} else if closestNeighbor.x > closestProtein.coord.x {
-							harvesterDir = W
-						} else if closestNeighbor.y < closestProtein.coord.y {
-							harvesterDir = S
-						} else if closestNeighbor.y > closestProtein.coord.y {
-							harvesterDir = N
-						}
-
-						fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
-					} else {
-						// grow a basic organ to get closer to the protein
-						fmt.Printf("GROW %d %d %d BASIC\n", closestOrgan.organId, closestNeighbor.x,
-							closestNeighbor.y)
-					}
-				}
-			} else {
-				// there is no protein on the grid, find a cell that is at the frontier of players' organisms
-
-				var enemyOrgans []Entity
-				for _, entity := range state.Entities {
-					if entity.owner == OPPONENT && entity._type == BASIC {
-						enemyOrgans = append(enemyOrgans, entity)
-					}
-				}
-
-				debug("Enemy organs: %+v\n", enemyOrgans)
-
-				var bestCell Coord
-				var bestOfMyOrgans Entity
-				var bestOfEnemyOrgans Entity
-				bestScore := -1000
-
-				for i := 0; i < state.Height; i++ {
-					for j := 0; j < state.Width; j++ {
-						if state.Grid[i][j] == -1 {
-							cell := Coord{j, i}
-
-							// find the closest of my organs
-							minDistance := 1000
-							closestOfMyOrgans := Entity{}
-
-							for _, organ := range organs {
-								dist := distance(cell, organ.coord)
-								if dist < minDistance {
-									minDistance = dist
-									closestOfMyOrgans = organ
-								}
-							}
-
-							// find the closest of enemy organs
-							minDistance = 1000
-							closestOfEnemyOrgans := Entity{}
-
-							for _, organ := range enemyOrgans {
-								dist := distance(cell, organ.coord)
-								if dist < minDistance {
-									minDistance = dist
-									closestOfEnemyOrgans = organ
-								}
-							}
-
-							diffDist := distance(closestOfMyOrgans.coord, cell) - distance(closestOfEnemyOrgans.coord, cell)
-
-							// only keep if the cell is closest to one of my organs than to any of the enemy organs (score < 0) but with a score that is the closest to 0 (frontier)
-							if diffDist <= 0 {
-								if diffDist > bestScore {
-									bestScore = diffDist
-									bestCell = cell
-									bestOfMyOrgans = closestOfMyOrgans
-									bestOfEnemyOrgans = closestOfEnemyOrgans
-								}
-							}
-						}
-					}
-				}
-
-				debug("Grow target cell: %+v from organ: %+v and enemy organ: %+v\n", bestCell, bestOfMyOrgans, bestOfEnemyOrgans)
-
-				fmt.Printf("GROW %d %d %d BASIC\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y)
-			}
-		}
+		sendActions()
 	}
 }
 
