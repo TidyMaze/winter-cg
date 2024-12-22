@@ -205,6 +205,10 @@ func (t EntityType) isProtein() bool {
 
 type Dir int
 
+func (d Dir) String() string {
+	return showDir(d)
+}
+
 const (
 	N Dir = iota
 	S
@@ -500,6 +504,19 @@ func sendActions() {
 
 		organs := findOrgansOfOrganism(root)
 
+		// identify possible tentacle attacks
+		attacks := findTentacleAttacks(organs)
+
+		if len(attacks) > 0 {
+			// attack the target
+
+			selectedAttack := attacks[0]
+
+			fmt.Printf("GROW %d %d %d TENTACLE %s\n", selectedAttack.organ.organId, selectedAttack.growCoord.x, selectedAttack.growCoord.y, selectedAttack.dir)
+
+			continue
+		}
+
 		// find the non-harvested proteins
 		nonHarvestedProteins := findNonHarvestedProteins()
 
@@ -521,6 +538,43 @@ func sendActions() {
 			growToFrontier(organs)
 		}
 	}
+}
+
+type TentacleGrowPlan struct {
+	organ     Entity
+	growCoord Coord
+	dir       Dir
+	attacked  Entity
+}
+
+func findTentacleAttacks(organs []Entity) []TentacleGrowPlan {
+	// find all the tentacles that I can grow to instantly kill an opponent organ
+	attacks := make([]TentacleGrowPlan, 0)
+
+	for _, organ := range organs {
+		for _, offset := range offsets {
+			coord := organ.coord.add(offset)
+			if coord.isValid() && state.isWalkable(coord) {
+				// check if there is an opponent organ in the direction of the offset
+				for _, dir := range []Dir{N, S, W, E} {
+					attackedCoord := coord.add(offsets[dir])
+					if attackedCoord.isValid() && state.Grid[attackedCoord.y][attackedCoord.x] != -1 {
+						attacked := state.Entities[state.Grid[attackedCoord.y][attackedCoord.x]]
+						if attacked.owner == OPPONENT {
+							attacks = append(attacks, TentacleGrowPlan{
+								organ:     organ,
+								growCoord: coord,
+								dir:       dir,
+								attacked:  attacked,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return attacks
 }
 
 func growToFrontier(organs []Entity) {
