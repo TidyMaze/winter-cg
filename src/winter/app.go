@@ -466,6 +466,19 @@ func parseTurnState() {
 	state.RequiredActionsCount = requiredActionsCount
 }
 
+func findOrgansOfOrganism(root Entity) []Entity {
+	// find all organs that have the organRootId equal to the root.organId
+	var organs []Entity
+	for _, entity := range state.Entities {
+		if entity.organRootId == root.organId {
+			organs = append(organs, entity)
+		}
+
+	}
+	debug("Organs: %+v\n", organs)
+	return organs
+}
+
 func sendActions() {
 	// find all roots
 	var roots []Entity
@@ -485,15 +498,7 @@ func sendActions() {
 
 		debug("=== Root: %+v ===\n", root)
 
-		// find all organs that have the organRootId equal to the root.organId
-		var organs []Entity
-		for _, entity := range state.Entities {
-			if entity.organRootId == root.organId {
-				organs = append(organs, entity)
-			}
-
-		}
-		debug("Organs: %+v\n", organs)
+		organs := findOrgansOfOrganism(root)
 
 		// find the non-harvested proteins
 		nonHarvestedProteins := findNonHarvestedProteins()
