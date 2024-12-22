@@ -462,13 +462,7 @@ func sendActions() {
 						if state.Grid[coord.y][coord.x] != -1 {
 							neighbor := state.Entities[state.Grid[coord.y][coord.x]]
 							if neighbor._type == HARVESTER && neighbor.owner == ME {
-								if coord.y < entity.coord.y && neighbor.organDir == S {
-									myHarvesters = append(myHarvesters, neighbor)
-								} else if coord.y > entity.coord.y && neighbor.organDir == N {
-									myHarvesters = append(myHarvesters, neighbor)
-								} else if coord.x < entity.coord.x && neighbor.organDir == E {
-									myHarvesters = append(myHarvesters, neighbor)
-								} else if coord.x > entity.coord.x && neighbor.organDir == W {
+								if findDirRelativeTo(neighbor.coord, entity.coord) == neighbor.organDir {
 									myHarvesters = append(myHarvesters, neighbor)
 								} else {
 									debug("Neighbor harvester %+v is not facing the protein %+v\n", neighbor, entity)
