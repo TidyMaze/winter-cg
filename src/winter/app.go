@@ -474,34 +474,34 @@ func main() {
 
 					debug("Can grow a sporer\n")
 
-					// find any neighbor of my organs that can reach a cell that is at distance 1 from a protein
-					for _, organ := range organs {
-						for _, offset := range offsets {
-							coord := organ.coord.add(offset)
-							if coord.isValid() {
-								if grid[coord.y][coord.x] == -1 {
-									for _, protein := range nonHarvestedProteins {
-										if distance(coord, protein.coord) == 1 {
-											// put a sporer facing the protein
-											sporerDir := N
-											if coord.x < protein.coord.x {
-												sporerDir = E
-											} else if coord.x > protein.coord.x {
-												sporerDir = W
-											} else if coord.y < protein.coord.y {
-												sporerDir = S
-											} else if coord.y > protein.coord.y {
-												sporerDir = N
-											}
+					// build a map of the intersting spore cells (cells that are at distance max 1 from a non harvested protein)
+					sporeCells := make([][]bool, Height)
+					for i := 0; i < Height; i++ {
+						sporeCells[i] = make([]bool, Width)
+					}
 
-											fmt.Printf("GROW %d %d %d SPORER %s\n", organ.organId, coord.x, coord.y, showDir(sporerDir))
-											break
-										}
-									}
-								}
+					for _, protein := range nonHarvestedProteins {
+						for _, offset := range offsets {
+							coord := protein.coord.add(offset)
+							if coord.isValid() {
+								sporeCells[coord.y][coord.x] = true
 							}
 						}
 					}
+
+					debug("Spore cells:\n", sporeCells)
+					for i := 0; i < Height; i++ {
+						for j := 0; j < Width; j++ {
+							if sporeCells[i][j] {
+								fmt.Fprintf(os.Stderr, "X ")
+							} else {
+								fmt.Fprintf(os.Stderr, "  ")
+							}
+						}
+						fmt.Fprintf(os.Stderr, "\n")
+					}
+
+					// find any neighbor of my organs that can reach a cell that is at distance 1 from a protein
 				} else {
 					// find the protein that is the closest from any of the organs and that is not harvested
 					var closestProtein Entity
