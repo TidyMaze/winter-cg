@@ -183,6 +183,7 @@ const (
 	ROOT
 	BASIC
 	HARVESTER
+	TENTACLE
 	SPORER
 	PROTEIN_A
 )
@@ -261,6 +262,10 @@ func parseType(_type string) EntityType {
 		return BASIC
 	case "HARVESTER":
 		return HARVESTER
+	case "TENTACLE":
+		return TENTACLE
+	case "SPORER":
+		return SPORER
 	case "A":
 		return PROTEIN_A
 	}
