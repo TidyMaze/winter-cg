@@ -194,6 +194,9 @@ const (
 	TENTACLE
 	SPORER
 	PROTEIN_A
+	PROTEIN_B
+	PROTEIN_C
+	PROTEIN_D
 )
 
 type Dir int
@@ -306,6 +309,12 @@ func parseType(_type string) EntityType {
 		return SPORER
 	case "A":
 		return PROTEIN_A
+	case "B":
+		return PROTEIN_B
+	case "C":
+		return PROTEIN_C
+	case "D":
+		return PROTEIN_D
 	}
 	panic(fmt.Sprintf("Unknown type %s", _type))
 }
