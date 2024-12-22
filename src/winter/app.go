@@ -494,60 +494,70 @@ func sendActions() {
 
 		if len(nonHarvestedProteins) > 0 {
 
-			if canGrow(state.MyProteins, SPORER) {
-				// check if the closest organ can reach the closest protein using sporers
+			// build a map of the intersting spore cells (cells that are at distance max 1 from a non harvested protein)
+			sporeCells := make([][]bool, state.Height)
+			for i := 0; i < state.Height; i++ {
+				sporeCells[i] = make([]bool, state.Width)
+			}
 
-				debug("Can grow a sporer\n")
-
-				// build a map of the intersting spore cells (cells that are at distance max 1 from a non harvested protein)
-				sporeCells := make([][]bool, state.Height)
-				for i := 0; i < state.Height; i++ {
-					sporeCells[i] = make([]bool, state.Width)
-				}
-
-				for _, protein := range nonHarvestedProteins {
-					for _, offset := range offsets {
-						coord := protein.coord.add(offset)
-						if coord.isValid() && state.Grid[coord.y][coord.x] == -1 {
-							sporeCells[coord.y][coord.x] = true
-						}
+			for _, protein := range nonHarvestedProteins {
+				for _, offset := range offsets {
+					coord := protein.coord.add(offset)
+					if coord.isValid() && state.Grid[coord.y][coord.x] == -1 {
+						sporeCells[coord.y][coord.x] = true
 					}
 				}
+			}
 
-				debug("Spore cells:\n")
-				for i := 0; i < state.Height; i++ {
-					for j := 0; j < state.Width; j++ {
-						if sporeCells[i][j] {
-							fmt.Fprintf(os.Stderr, "X ")
-						} else {
-							fmt.Fprintf(os.Stderr, "  ")
-						}
+			debug("Spore cells:\n")
+			for i := 0; i < state.Height; i++ {
+				for j := 0; j < state.Width; j++ {
+					if sporeCells[i][j] {
+						fmt.Fprintf(os.Stderr, "X ")
+					} else {
+						fmt.Fprintf(os.Stderr, "  ")
 					}
-					fmt.Fprintf(os.Stderr, "\n")
 				}
+				fmt.Fprintf(os.Stderr, "\n")
+			}
 
-				// find any neighbor of my organs that can reach a spore cell in any direction
+			// check if I have a sporer that can spore a new root into a spore cell
+			sporer := Entity{}
+			sporeCoord := Coord{-1, -1}
+			for _, entity := range state.Entities {
+				if entity._type == SPORER && entity.owner == ME {
+					sporeCooord := findSporeCellInDirection(entity.coord, entity.organDir, sporeCells)
+					if sporeCooord.isValid() {
+						sporer = entity
+						sporeCoord = sporeCooord
+						break
+					}
+				}
+			}
 
-				sporerPlans := make([]SporePlan, 0)
+			if sporeCoord.isValid() {
+				debug("Found a spore cell: %+v for sporer: %+v\n", sporeCoord, sporer)
+				fmt.Printf("SPORE %d %d %d\n", sporer.organId, sporeCoord.x, sporeCoord.y)
+			} else {
 
-				for _, organ := range organs {
-					for _, offset := range offsets {
-						coord := organ.coord.add(offset)
-						if coord.isValid() && state.Grid[coord.y][coord.x] == -1 {
-							// simulate the spore in all directions until it reaches a spore cell
-							for _, dir := range []Dir{N, S, W, E} {
-								sporeCoord := coord
-								for {
-									sporeCoord = sporeCoord.add(offsets[dir])
-									if !sporeCoord.isValid() {
-										break
-									}
+				if canGrow(state.MyProteins, SPORER) {
+					// check if the closest organ can reach the closest protein using sporers
 
-									if state.Grid[sporeCoord.y][sporeCoord.x] != -1 {
-										break
-									}
+					debug("Can grow a sporer\n")
 
-									if sporeCells[sporeCoord.y][sporeCoord.x] {
+					// find any neighbor of my organs that can reach a spore cell in any direction
+
+					sporerPlans := make([]SporePlan, 0)
+
+					for _, organ := range organs {
+						for _, offset := range offsets {
+							coord := organ.coord.add(offset)
+							if coord.isValid() && state.Grid[coord.y][coord.x] == -1 {
+								// simulate the spore in all directions until it reaches a spore cell
+								for _, dir := range []Dir{N, S, W, E} {
+									sporeCoord := findSporeCellInDirection(coord, dir, sporeCells)
+
+									if sporeCoord.isValid() {
 										debug("Organ: %+v can reach spore cell: %+v after sporing in direction: %s from cell: %+v\n", organ, sporeCoord, showDir(dir), coord)
 										sporerPlans = append(sporerPlans, SporePlan{
 											organ:          organ,
@@ -560,73 +570,73 @@ func sendActions() {
 							}
 						}
 					}
-				}
 
-				if len(sporerPlans) > 0 {
-					debug("Spore plans:\n")
-					for _, plan := range sporerPlans {
-						debug("Organ: %+v, new sporer coord: %+v, sporer dir: %s, target: %+v\n", plan.organ, plan.newSporerCoord, showDir(plan.sporerDir), plan.target)
+					if len(sporerPlans) > 0 {
+						debug("Spore plans:\n")
+						for _, plan := range sporerPlans {
+							debug("Organ: %+v, new sporer coord: %+v, sporer dir: %s, target: %+v\n", plan.organ, plan.newSporerCoord, showDir(plan.sporerDir), plan.target)
+						}
+
+						// choose the best spore plan
+						bestPlan := sporerPlans[0]
+
+						// grow the sporer
+						fmt.Printf("GROW %d %d %d SPORER %s\n", bestPlan.organ.organId, bestPlan.newSporerCoord.x, bestPlan.newSporerCoord.y, showDir(bestPlan.sporerDir))
+					} else {
+						debug("No spore plans\n")
 					}
-
-					// choose the best spore plan
-					bestPlan := sporerPlans[0]
-
-					// grow the sporer
-					fmt.Printf("GROW %d %d %d SPORER %s\n", bestPlan.organ.organId, bestPlan.newSporerCoord.x, bestPlan.newSporerCoord.y, showDir(bestPlan.sporerDir))
 				} else {
-					debug("No spore plans\n")
-				}
-			} else {
-				// find the protein that is the closest from any of the organs and that is not harvested
-				var closestProtein Entity
-				var closestOrgan Entity
-				minDistance := 1000
-				for _, entity := range state.Entities {
-					if entity._type == PROTEIN_A && !isAlreadyHarvested(entity, nonHarvestedProteins) {
-						for _, organ := range organs {
-							dist := distance(entity.coord, organ.coord)
-							if dist < minDistance {
-								minDistance = dist
-								closestProtein = entity
-								closestOrgan = organ
+					// find the protein that is the closest from any of the organs and that is not harvested
+					var closestProtein Entity
+					var closestOrgan Entity
+					minDistance := 1000
+					for _, entity := range state.Entities {
+						if entity._type == PROTEIN_A && !isAlreadyHarvested(entity, nonHarvestedProteins) {
+							for _, organ := range organs {
+								dist := distance(entity.coord, organ.coord)
+								if dist < minDistance {
+									minDistance = dist
+									closestProtein = entity
+									closestOrgan = organ
+								}
 							}
 						}
 					}
-				}
 
-				debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
+					debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
 
-				// find the neighbor of the closest organ that is the closest to the closest protein
-				var closestNeighbor Coord
-				minDistanceFromNeighbor := 1000
+					// find the neighbor of the closest organ that is the closest to the closest protein
+					var closestNeighbor Coord
+					minDistanceFromNeighbor := 1000
 
-				for _, offset := range offsets {
-					coord := closestOrgan.coord.add(offset)
-					if coord.isValid() {
-						// never grow on a protein
-						if state.Grid[coord.y][coord.x] == -1 {
-							dist := distance(coord, closestProtein.coord)
-							if dist < minDistanceFromNeighbor {
-								minDistanceFromNeighbor = dist
-								closestNeighbor = coord
+					for _, offset := range offsets {
+						coord := closestOrgan.coord.add(offset)
+						if coord.isValid() {
+							// never grow on a protein
+							if state.Grid[coord.y][coord.x] == -1 {
+								dist := distance(coord, closestProtein.coord)
+								if dist < minDistanceFromNeighbor {
+									minDistanceFromNeighbor = dist
+									closestNeighbor = coord
+								}
 							}
 						}
 					}
-				}
 
-				debug("Closest neighbor: %+v\n", closestNeighbor)
+					debug("Closest neighbor: %+v\n", closestNeighbor)
 
-				if minDistanceFromNeighbor == 1 {
-					// put a harvester facing the protein
-					harvesterDir := N
+					if minDistanceFromNeighbor == 1 {
+						// put a harvester facing the protein
+						harvesterDir := N
 
-					harvesterDir = findDirRelativeTo(closestNeighbor, closestProtein.coord)
+						harvesterDir = findDirRelativeTo(closestNeighbor, closestProtein.coord)
 
-					fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
-				} else {
-					// grow a basic organ to get closer to the protein
-					fmt.Printf("GROW %d %d %d BASIC\n", closestOrgan.organId, closestNeighbor.x,
-						closestNeighbor.y)
+						fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
+					} else {
+						// grow a basic organ to get closer to the protein
+						fmt.Printf("GROW %d %d %d BASIC\n", closestOrgan.organId, closestNeighbor.x,
+							closestNeighbor.y)
+					}
 				}
 			}
 		} else {
@@ -695,6 +705,26 @@ func sendActions() {
 			fmt.Printf("GROW %d %d %d BASIC\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y)
 		}
 	}
+}
+
+func findSporeCellInDirection(coord Coord, dir Dir, sporeCells [][]bool) Coord {
+	sporeCoord := coord
+	for {
+		sporeCoord = sporeCoord.add(offsets[dir])
+		if !sporeCoord.isValid() {
+			break
+		}
+
+		if state.Grid[sporeCoord.y][sporeCoord.x] != -1 {
+			break
+		}
+
+		if sporeCells[sporeCoord.y][sporeCoord.x] {
+			return sporeCoord
+		}
+	}
+
+	return Coord{-1, -1}
 }
 
 func main() {
