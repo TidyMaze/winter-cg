@@ -664,7 +664,7 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity) {
 	closestNeighbor, closestOrgan := findClosestNeighborToProtein(closestProtein, organs)
 	debug("Closest neighbor: %+v\n", closestNeighbor)
 
-	if distance(closestNeighbor, closestProtein.coord) == 1 {
+	if distance(closestNeighbor, closestProtein.coord) == 1 && canGrow(state.MyProteins, HARVESTER) {
 		harvesterDir := findDirRelativeTo(closestNeighbor, closestProtein.coord)
 		fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
 	} else {
