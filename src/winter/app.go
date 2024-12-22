@@ -429,12 +429,12 @@ func parseTurnState() {
 	// }
 
 	// print the grid
-	for i := 0; i < state.Height; i++ {
-		for j := 0; j < state.Width; j++ {
-			fmt.Fprintf(os.Stderr, "%d ", state.Grid[i][j])
-		}
-		fmt.Fprintf(os.Stderr, "\n")
-	}
+	// for i := 0; i < state.Height; i++ {
+	// 	for j := 0; j < state.Width; j++ {
+	// 		fmt.Fprintf(os.Stderr, "%d ", state.Grid[i][j])
+	// 	}
+	// 	fmt.Fprintf(os.Stderr, "\n")
+	// }
 
 	state.MyProteins = make([]int, 4)
 	state.OppProteins = make([]int, 4)
@@ -496,6 +496,8 @@ func sendActions() {
 		panic(fmt.Sprintf("Expected %d roots, found %d", state.RequiredActionsCount, len(roots)))
 	}
 
+	enemyTentaclesTargets := findEnemyTentaclesTargets()
+
 	for i := 0; i < state.RequiredActionsCount; i++ {
 		// get the first root
 		var root Entity = roots[i]
@@ -505,7 +507,7 @@ func sendActions() {
 		organs := findOrgansOfOrganism(root)
 
 		// identify possible tentacle attacks
-		attacks := findTentacleAttacks(organs)
+		attacks := findTentacleAttacks(organs, enemyTentaclesTargets)
 
 		if len(attacks) > 0 {
 			// attack the target
@@ -540,6 +542,37 @@ func sendActions() {
 	}
 }
 
+func findEnemyTentaclesTargets() [][]bool {
+	// find all the cells that are targeted by the enemy tentacles (cannot grow there)
+	tentacleTargets := make([][]bool, state.Height)
+	for i := 0; i < state.Height; i++ {
+		tentacleTargets[i] = make([]bool, state.Width)
+	}
+
+	for _, entity := range state.Entities {
+		if entity._type == TENTACLE && entity.owner == OPPONENT {
+			coord := entity.coord.add(offsets[entity.organDir])
+			if coord.isValid() {
+				tentacleTargets[coord.y][coord.x] = true
+			}
+		}
+	}
+
+	debug("Tentacle targets:\n")
+	for i := 0; i < state.Height; i++ {
+		for j := 0; j < state.Width; j++ {
+			if tentacleTargets[i][j] {
+				fmt.Fprintf(os.Stderr, "X ")
+			} else {
+				fmt.Fprintf(os.Stderr, "  ")
+			}
+		}
+		fmt.Fprintf(os.Stderr, "\n")
+	}
+
+	return tentacleTargets
+}
+
 type TentacleGrowPlan struct {
 	organ     Entity
 	growCoord Coord
@@ -547,14 +580,18 @@ type TentacleGrowPlan struct {
 	attacked  Entity
 }
 
-func findTentacleAttacks(organs []Entity) []TentacleGrowPlan {
+func findTentacleAttacks(organs []Entity, enemyTentaclesTargets [][]bool) []TentacleGrowPlan {
 	// find all the tentacles that I can grow to instantly kill an opponent organ
 	attacks := make([]TentacleGrowPlan, 0)
+
+	if !canGrow(state.MyProteins, TENTACLE) {
+		return attacks
+	}
 
 	for _, organ := range organs {
 		for _, offset := range offsets {
 			coord := organ.coord.add(offset)
-			if coord.isValid() && state.isWalkable(coord) {
+			if coord.isValid() && state.isWalkable(coord) && !enemyTentaclesTargets[coord.y][coord.x] {
 				// check if there is an opponent organ in the direction of the offset
 				for _, dir := range []Dir{N, S, W, E} {
 					attackedCoord := coord.add(offsets[dir])
