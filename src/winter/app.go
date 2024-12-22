@@ -138,6 +138,7 @@ const (
 	S
 	W
 	E
+	NO_DIR
 )
 
 var offsets = []Coord{
@@ -175,8 +176,9 @@ func parseDir(dir string) Dir {
 		return E
 	case "W":
 		return W
+	default:
+		return NO_DIR
 	}
-	panic(fmt.Sprintf("Unknown dir %s", dir))
 }
 
 func showDir(dir Dir) string {
@@ -277,7 +279,7 @@ func main() {
 				_type:         parseType(_type),
 				owner:         parseOwner(owner),
 				organId:       organId,
-				organDir:      N,
+				organDir:      parseDir(organDir),
 				organParentId: organParentId,
 				organRootId:   organRootId,
 			}
