@@ -534,24 +534,31 @@ func sendActions() {
 				fmt.Fprintf(os.Stderr, "\n")
 			}
 
-			// check if I have a sporer that can spore a new root into a spore cell
-			sporer := Entity{}
-			sporeCoord := Coord{-1, -1}
-			for _, entity := range state.Entities {
-				if entity._type == SPORER && entity.owner == ME {
-					sporeCooord := findSporeCellInDirection(entity.coord, entity.organDir, sporeCells)
-					if sporeCooord.isValid() {
-						sporer = entity
-						sporeCoord = sporeCooord
-						break
+			spored := false
+
+			if canSpore(state.MyProteins) {
+				// check if I have a sporer that can spore a new root into a spore cell
+				sporer := Entity{}
+				sporeCoord := Coord{-1, -1}
+				for _, entity := range state.Entities {
+					if entity._type == SPORER && entity.owner == ME {
+						sporeCooord := findSporeCellInDirection(entity.coord, entity.organDir, sporeCells)
+						if sporeCooord.isValid() {
+							sporer = entity
+							sporeCoord = sporeCooord
+							break
+						}
 					}
+				}
+
+				if sporeCoord.isValid() {
+					spored = true
+					debug("Found a spore cell: %+v for sporer: %+v\n", sporeCoord, sporer)
+					fmt.Printf("SPORE %d %d %d\n", sporer.organId, sporeCoord.x, sporeCoord.y)
 				}
 			}
 
-			if sporeCoord.isValid() {
-				debug("Found a spore cell: %+v for sporer: %+v\n", sporeCoord, sporer)
-				fmt.Printf("SPORE %d %d %d\n", sporer.organId, sporeCoord.x, sporeCoord.y)
-			} else {
+			if !spored {
 
 				if canGrow(state.MyProteins, SPORER) {
 					// check if the closest organ can reach the closest protein using sporers
@@ -570,7 +577,7 @@ func sendActions() {
 								for _, dir := range []Dir{N, S, W, E} {
 									sporeCoord := findSporeCellInDirection(coord, dir, sporeCells)
 
-									if sporeCoord.isValid() {
+									if sporeCoord.isValid() && distance(coord, sporeCoord) > 1 {
 										debug("Organ: %+v can reach spore cell: %+v after sporing in direction: %s from cell: %+v\n", organ, sporeCoord, showDir(dir), coord)
 										sporerPlans = append(sporerPlans, SporePlan{
 											organ:          organ,
@@ -725,6 +732,10 @@ func sendActions() {
 	}
 }
 
+func canSpore(proteinCounts []int) bool {
+	return proteinCounts[0] >= 1 && proteinCounts[1] >= 1 && proteinCounts[2] >= 1 && proteinCounts[3] >= 1
+}
+
 func findSporeCellInDirection(coord Coord, dir Dir, sporeCells [][]bool) Coord {
 	sporeCoord := coord
 	for {
@@ -766,10 +777,9 @@ func canGrow(proteinCounts []int, _type EntityType) bool {
 		return proteinCounts[1] >= 1 && proteinCounts[2] >= 1
 	case SPORER:
 		return proteinCounts[1] >= 1 && proteinCounts[3] >= 1
-	case ROOT:
-		return proteinCounts[0] >= 1 && proteinCounts[1] >= 1 && proteinCounts[2] >= 1 && proteinCounts[3] >= 1
+	default:
+		panic(fmt.Sprintf("Unknown type %d", _type))
 	}
-	return false
 }
 
 func isAlreadyHarvested(entity Entity, nonHarvestedProteins []Entity) bool {
