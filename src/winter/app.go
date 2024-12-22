@@ -482,42 +482,7 @@ func sendActions() {
 		debug("Organs: %+v\n", organs)
 
 		// find the non-harvested proteins
-		var nonHarvestedProteins []Entity
-
-		for _, entity := range state.Entities {
-			if entity._type.isProtein() {
-				// find my neighbor harvesters of this protein (must be facing the protein)
-				myHarvesters := make([]Entity, 0)
-				for _, offset := range offsets {
-					coord := entity.coord.add(offset)
-					if coord.isValid() {
-						if state.Grid[coord.y][coord.x] != -1 {
-							neighbor := state.Entities[state.Grid[coord.y][coord.x]]
-							if neighbor._type == HARVESTER && neighbor.owner == ME {
-								if findDirRelativeTo(neighbor.coord, entity.coord) == neighbor.organDir {
-									myHarvesters = append(myHarvesters, neighbor)
-								} else {
-									debug("Neighbor harvester %+v is not facing the protein %+v\n", neighbor, entity)
-								}
-							}
-						}
-					}
-				}
-
-				if len(myHarvesters) > 0 {
-					// debug("My harvesters for protein: %+v: %+v\n", entity, myHarvesters)
-				} else {
-					nonHarvestedProteins = append(nonHarvestedProteins, entity)
-				}
-			}
-		}
-
-		nonHarvestedProteinsIds := make([]int, 0)
-		for _, protein := range nonHarvestedProteins {
-			nonHarvestedProteinsIds = append(nonHarvestedProteinsIds, protein.organId)
-		}
-
-		debug("Non-harvested proteins: %+v\n", nonHarvestedProteinsIds)
+		nonHarvestedProteins := findNonHarvestedProteins()
 
 		if len(nonHarvestedProteins) > 0 {
 
@@ -623,6 +588,47 @@ func sendActions() {
 			fmt.Printf("GROW %d %d %d BASIC\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y)
 		}
 	}
+}
+
+func findNonHarvestedProteins() []Entity {
+	var nonHarvestedProteins []Entity
+
+	for _, entity := range state.Entities {
+		if entity._type.isProtein() {
+			// find my neighbor harvesters of this protein (must be facing the protein)
+			myHarvesters := make([]Entity, 0)
+			for _, offset := range offsets {
+				coord := entity.coord.add(offset)
+				if coord.isValid() {
+					if state.Grid[coord.y][coord.x] != -1 {
+						neighbor := state.Entities[state.Grid[coord.y][coord.x]]
+						if neighbor._type == HARVESTER && neighbor.owner == ME {
+							if findDirRelativeTo(neighbor.coord, entity.coord) == neighbor.organDir {
+								myHarvesters = append(myHarvesters, neighbor)
+							} else {
+								debug("Neighbor harvester %+v is not facing the protein %+v\n", neighbor, entity)
+							}
+						}
+					}
+				}
+			}
+
+			if len(myHarvesters) > 0 {
+				// debug("My harvesters for protein: %+v: %+v\n", entity, myHarvesters)
+			} else {
+				nonHarvestedProteins = append(nonHarvestedProteins, entity)
+			}
+		}
+	}
+
+	nonHarvestedProteinsIds := make([]int, 0)
+	for _, protein := range nonHarvestedProteins {
+		nonHarvestedProteinsIds = append(nonHarvestedProteinsIds, protein.organId)
+	}
+
+	debug("Non-harvested proteins: %+v\n", nonHarvestedProteinsIds)
+
+	return nonHarvestedProteins
 }
 
 func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity) {
