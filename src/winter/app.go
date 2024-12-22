@@ -495,7 +495,7 @@ func sendActions() {
 				}
 
 				if len(myHarvesters) > 0 {
-					debug("My harvesters for protein: %+v: %+v\n", entity, myHarvesters)
+					// debug("My harvesters for protein: %+v: %+v\n", entity, myHarvesters)
 				} else {
 					nonHarvestedProteins = append(nonHarvestedProteins, entity)
 				}
