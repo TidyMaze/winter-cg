@@ -558,6 +558,7 @@ func sendActions() {
 			}
 
 			if !spored {
+				grewSporer := false
 
 				if canGrow(state.MyProteins, SPORER) {
 					// check if the closest organ can reach the closest protein using sporers
@@ -600,11 +601,14 @@ func sendActions() {
 						bestPlan := sporerPlans[0]
 
 						// grow the sporer
+						grewSporer = true
 						fmt.Printf("GROW %d %d %d SPORER %s\n", bestPlan.organ.organId, bestPlan.newSporerCoord.x, bestPlan.newSporerCoord.y, showDir(bestPlan.sporerDir))
 					} else {
 						debug("No spore plans\n")
 					}
-				} else {
+				}
+
+				if !grewSporer {
 					// find the protein that is the closest from any of the organs and that is not harvested
 					var closestProtein Entity
 					var closestOrgan Entity
