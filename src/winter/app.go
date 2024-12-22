@@ -453,15 +453,21 @@ func parseTurnState() {
 }
 
 func sendActions() {
+	// find all roots
+	var roots []Entity
+	for _, entity := range state.Entities {
+		if entity._type == ROOT && entity.owner == ME {
+			roots = append(roots, entity)
+		}
+	}
+
+	if len(roots) != state.RequiredActionsCount {
+		panic(fmt.Sprintf("Expected %d roots, found %d", state.RequiredActionsCount, len(roots)))
+	}
+
 	for i := 0; i < state.RequiredActionsCount; i++ {
 		// get the first root
-		var root Entity
-		for _, entity := range state.Entities {
-			if entity._type == ROOT && entity.owner == ME {
-				root = entity
-				break
-			}
-		}
+		var root Entity = roots[i]
 
 		debug("=== Root: %+v ===\n", root)
 
@@ -545,56 +551,7 @@ func sendActions() {
 			spored := sporeIfPossible(sporeCells)
 
 			if !spored {
-				grewSporer := false
-
-				if canGrow(state.MyProteins, SPORER) {
-					// check if the closest organ can reach the closest protein using sporers
-
-					debug("Can grow a sporer\n")
-
-					// find any neighbor of my organs that can reach a spore cell in any direction
-
-					sporerPlans := make([]SporePlan, 0)
-
-					for _, organ := range organs {
-						for _, offset := range offsets {
-							sporerCoord := organ.coord.add(offset)
-							if sporerCoord.isValid() && state.Grid[sporerCoord.y][sporerCoord.x] == -1 {
-								// simulate the spore in all directions until it reaches a spore cell
-								for _, dir := range []Dir{N, S, W, E} {
-									sporeCoord := findSporeCellInDirection(sporerCoord, dir, sporeCells)
-
-									if sporeCoord.isValid() &&
-										distance(sporerCoord, sporeCoord) > 4 {
-										debug("Organ: %+v can reach spore cell: %+v after sporing in direction: %s from cell: %+v\n", organ, sporeCoord, showDir(dir), sporerCoord)
-										sporerPlans = append(sporerPlans, SporePlan{
-											organ:          organ,
-											newSporerCoord: sporerCoord,
-											sporerDir:      dir,
-											target:         sporeCoord,
-										})
-									}
-								}
-							}
-						}
-					}
-
-					if len(sporerPlans) > 0 {
-						debug("Spore plans:\n")
-						for _, plan := range sporerPlans {
-							debug("Organ: %+v, new sporer coord: %+v, sporer dir: %s, target: %+v\n", plan.organ, plan.newSporerCoord, showDir(plan.sporerDir), plan.target)
-						}
-
-						// choose the best spore plan
-						bestPlan := sporerPlans[0]
-
-						// grow the sporer
-						grewSporer = true
-						fmt.Printf("GROW %d %d %d SPORER %s\n", bestPlan.organ.organId, bestPlan.newSporerCoord.x, bestPlan.newSporerCoord.y, showDir(bestPlan.sporerDir))
-					} else {
-						debug("No spore plans\n")
-					}
-				}
+				grewSporer := growSporerIfPossible(sporeCells, organs)
 
 				if !grewSporer {
 					// find the protein that is the closest from any of the organs and that is not harvested
@@ -720,6 +677,59 @@ func sendActions() {
 			fmt.Printf("GROW %d %d %d BASIC\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y)
 		}
 	}
+}
+
+func growSporerIfPossible(sporeCells [][]bool, organs []Entity) bool {
+	if canGrow(state.MyProteins, SPORER) {
+		// check if the closest organ can reach the closest protein using sporers
+
+		debug("Can grow a sporer\n")
+
+		// find any neighbor of my organs that can reach a spore cell in any direction
+
+		sporerPlans := make([]SporePlan, 0)
+
+		for _, organ := range organs {
+			for _, offset := range offsets {
+				sporerCoord := organ.coord.add(offset)
+				if sporerCoord.isValid() && state.Grid[sporerCoord.y][sporerCoord.x] == -1 {
+					// simulate the spore in all directions until it reaches a spore cell
+					for _, dir := range []Dir{N, S, W, E} {
+						sporeCoord := findSporeCellInDirection(sporerCoord, dir, sporeCells)
+
+						if sporeCoord.isValid() &&
+							distance(sporerCoord, sporeCoord) > 4 {
+							debug("Organ: %+v can reach spore cell: %+v after sporing in direction: %s from cell: %+v\n", organ, sporeCoord, showDir(dir), sporerCoord)
+							sporerPlans = append(sporerPlans, SporePlan{
+								organ:          organ,
+								newSporerCoord: sporerCoord,
+								sporerDir:      dir,
+								target:         sporeCoord,
+							})
+						}
+					}
+				}
+			}
+		}
+
+		if len(sporerPlans) > 0 {
+			debug("Spore plans:\n")
+			for _, plan := range sporerPlans {
+				debug("Organ: %+v, new sporer coord: %+v, sporer dir: %s, target: %+v\n", plan.organ, plan.newSporerCoord, showDir(plan.sporerDir), plan.target)
+			}
+
+			// choose the best spore plan
+			bestPlan := sporerPlans[0]
+
+			// grow the sporer
+			fmt.Printf("GROW %d %d %d SPORER %s\n", bestPlan.organ.organId, bestPlan.newSporerCoord.x, bestPlan.newSporerCoord.y, showDir(bestPlan.sporerDir))
+			return true
+		} else {
+			debug("No spore plans\n")
+		}
+	}
+
+	return false
 }
 
 func sporeIfPossible(sporeCells [][]bool) bool {
