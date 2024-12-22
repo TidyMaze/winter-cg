@@ -479,7 +479,7 @@ func findOrgansOfOrganism(root Entity) []Entity {
 		}
 
 	}
-	debug("Organs: %+v\n", organs)
+	// debug("Organs: %+v\n", organs)
 	return organs
 }
 
@@ -624,7 +624,7 @@ func growToFrontier(organs []Entity) {
 		}
 	}
 
-	debug("Enemy organs: %+v\n", enemyOrgans)
+	// debug("Enemy organs: %+v\n", enemyOrgans)
 
 	var bestCell Coord
 	var bestOfMyOrgans Entity
@@ -675,9 +675,15 @@ func growToFrontier(organs []Entity) {
 		}
 	}
 
+	growType := findGrowType()
+
 	debug("Grow target cell: %+v from organ: %+v and enemy organ: %+v\n", bestCell, bestOfMyOrgans, bestOfEnemyOrgans)
 
-	fmt.Printf("GROW %d %d %d BASIC\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y)
+	if growType == -1 {
+		fmt.Println("WAIT")
+	} else {
+		fmt.Printf("GROW %d %d %d %s\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y, showOrganType(growType))
+	}
 }
 
 func buildSporeCellsMap(nonHarvestedProteins []Entity) [][]bool {
@@ -751,6 +757,18 @@ func findNonHarvestedProteins() []Entity {
 	return nonHarvestedProteins
 }
 
+func findGrowType() EntityType {
+	growType := EntityType(-1)
+
+	for _, _type := range []EntityType{BASIC, HARVESTER, TENTACLE, SPORER} {
+		if canGrow(state.MyProteins, _type) {
+			return _type
+		}
+	}
+
+	return growType
+}
+
 func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTentaclesTargets [][]bool) {
 	// find the closest protein and organ
 	closestProtein, closestOrgan := findClosestProteinAndOrgan(nonHarvestedProteins, organs)
@@ -764,14 +782,7 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTen
 		harvesterDir := findDirRelativeTo(closestNeighbor, closestProtein.coord)
 		fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
 	} else {
-		growType := EntityType(-1)
-
-		for _, _type := range []EntityType{BASIC, HARVESTER, TENTACLE, SPORER} {
-			if canGrow(state.MyProteins, _type) {
-				growType = _type
-				break
-			}
-		}
+		growType := findGrowType()
 
 		if growType == -1 {
 			fmt.Println("WAIT")
@@ -843,7 +854,7 @@ func growSporerIfPossible(sporeCells [][]bool, organs []Entity) bool {
 						sporeCoord := findSporeCellInDirection(sporerCoord, dir, sporeCells)
 
 						if sporeCoord.isValid() &&
-							distance(sporerCoord, sporeCoord) > 4 {
+							distance(sporerCoord, sporeCoord) > 3 {
 							debug("Organ: %+v can reach spore cell: %+v after sporing in direction: %s from cell: %+v\n", organ, sporeCoord, showDir(dir), sporerCoord)
 							sporerPlans = append(sporerPlans, SporePlan{
 								organ:          organ,
