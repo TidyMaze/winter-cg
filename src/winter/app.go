@@ -498,7 +498,7 @@ func main() {
 						}
 					}
 
-					debug("Spore cells:\n", sporeCells)
+					debug("Spore cells:\n")
 					for i := 0; i < state.Height; i++ {
 						for j := 0; j < state.Width; j++ {
 							if sporeCells[i][j] {
