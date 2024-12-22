@@ -499,71 +499,75 @@ func sendActions() {
 				}
 			}
 		} else {
-			// there is no protein on the grid, find a cell that is at the frontier of players' organisms
+			growToFrontier(organs)
+		}
+	}
+}
 
-			var enemyOrgans []Entity
-			for _, entity := range state.Entities {
-				if entity.owner == OPPONENT && entity._type == BASIC {
-					enemyOrgans = append(enemyOrgans, entity)
+func growToFrontier(organs []Entity) {
+	// there is no protein on the grid, find a cell that is at the frontier of players' organisms
+
+	var enemyOrgans []Entity
+	for _, entity := range state.Entities {
+		if entity.owner == OPPONENT && entity._type == BASIC {
+			enemyOrgans = append(enemyOrgans, entity)
+		}
+	}
+
+	debug("Enemy organs: %+v\n", enemyOrgans)
+
+	var bestCell Coord
+	var bestOfMyOrgans Entity
+	var bestOfEnemyOrgans Entity
+	bestScore := -1000
+
+	for i := 0; i < state.Height; i++ {
+		for j := 0; j < state.Width; j++ {
+			if state.Grid[i][j] == -1 {
+				cell := Coord{j, i}
+
+				// find the closest of my organs
+				minDistance := 1000
+				closestOfMyOrgans := Entity{}
+
+				for _, organ := range organs {
+					dist := distance(cell, organ.coord)
+					if dist < minDistance {
+						minDistance = dist
+						closestOfMyOrgans = organ
+					}
 				}
-			}
 
-			debug("Enemy organs: %+v\n", enemyOrgans)
+				// find the closest of enemy organs
+				minDistance = 1000
+				closestOfEnemyOrgans := Entity{}
 
-			var bestCell Coord
-			var bestOfMyOrgans Entity
-			var bestOfEnemyOrgans Entity
-			bestScore := -1000
+				for _, organ := range enemyOrgans {
+					dist := distance(cell, organ.coord)
+					if dist < minDistance {
+						minDistance = dist
+						closestOfEnemyOrgans = organ
+					}
+				}
 
-			for i := 0; i < state.Height; i++ {
-				for j := 0; j < state.Width; j++ {
-					if state.Grid[i][j] == -1 {
-						cell := Coord{j, i}
+				diffDist := distance(closestOfMyOrgans.coord, cell) - distance(closestOfEnemyOrgans.coord, cell)
 
-						// find the closest of my organs
-						minDistance := 1000
-						closestOfMyOrgans := Entity{}
-
-						for _, organ := range organs {
-							dist := distance(cell, organ.coord)
-							if dist < minDistance {
-								minDistance = dist
-								closestOfMyOrgans = organ
-							}
-						}
-
-						// find the closest of enemy organs
-						minDistance = 1000
-						closestOfEnemyOrgans := Entity{}
-
-						for _, organ := range enemyOrgans {
-							dist := distance(cell, organ.coord)
-							if dist < minDistance {
-								minDistance = dist
-								closestOfEnemyOrgans = organ
-							}
-						}
-
-						diffDist := distance(closestOfMyOrgans.coord, cell) - distance(closestOfEnemyOrgans.coord, cell)
-
-						// only keep if the cell is closest to one of my organs than to any of the enemy organs (score < 0) but with a score that is the closest to 0 (frontier)
-						if diffDist <= 0 {
-							if diffDist > bestScore {
-								bestScore = diffDist
-								bestCell = cell
-								bestOfMyOrgans = closestOfMyOrgans
-								bestOfEnemyOrgans = closestOfEnemyOrgans
-							}
-						}
+				// only keep if the cell is closest to one of my organs than to any of the enemy organs (score < 0) but with a score that is the closest to 0 (frontier)
+				if diffDist <= 0 {
+					if diffDist > bestScore {
+						bestScore = diffDist
+						bestCell = cell
+						bestOfMyOrgans = closestOfMyOrgans
+						bestOfEnemyOrgans = closestOfEnemyOrgans
 					}
 				}
 			}
-
-			debug("Grow target cell: %+v from organ: %+v and enemy organ: %+v\n", bestCell, bestOfMyOrgans, bestOfEnemyOrgans)
-
-			fmt.Printf("GROW %d %d %d BASIC\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y)
 		}
 	}
+
+	debug("Grow target cell: %+v from organ: %+v and enemy organ: %+v\n", bestCell, bestOfMyOrgans, bestOfEnemyOrgans)
+
+	fmt.Printf("GROW %d %d %d BASIC\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y)
 }
 
 func buildSporeCellsMap(nonHarvestedProteins []Entity) [][]bool {
