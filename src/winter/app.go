@@ -319,101 +319,104 @@ func abs(a int) int {
 	return a
 }
 
+func parseTurnState() {
+	state.Grid = make([][]int, state.Height)
+	for i := 0; i < state.Height; i++ {
+		state.Grid[i] = make([]int, state.Width)
+		for j := 0; j < state.Width; j++ {
+			state.Grid[i][j] = -1
+		}
+	}
+
+	var entityCount int
+	fmt.Scan(&entityCount)
+
+	state.Entities = make([]Entity, entityCount)
+
+	for i := 0; i < entityCount; i++ {
+		// y: grid coordinate
+		// _type: WALL, ROOT, BASIC, TENTACLE, HARVESTER, SPORER, A, B, C, D
+		// owner: 1 if your organ, 0 if enemy organ, -1 if neither
+		// organId: id of this entity if it's an organ, 0 otherwise
+		// organDir: N,E,S,W or X if not an organ
+		var x, y int
+		var _type string
+		var owner, organId int
+		var organDir string
+		var organParentId, organRootId int
+		fmt.Scan(&x, &y, &_type, &owner, &organId, &organDir, &organParentId, &organRootId)
+
+		// debug("x: %d, y: %d, type: %s, owner: %d, organId: %d, organDir: %s, organParentId: %d, organRootId: %d\n", x, y, _type, owner, organId, organDir, organParentId, organRootId)
+
+		entity := Entity{
+			coord:         Coord{x, y},
+			_type:         parseType(_type),
+			owner:         parseOwner(owner),
+			organId:       organId,
+			organDir:      parseDir(organDir),
+			organParentId: organParentId,
+			organRootId:   organRootId,
+		}
+
+		state.Entities[i] = entity
+
+		state.Grid[y][x] = i
+	}
+
+	// debug the entities
+	// for _, entity := range state.Entities {
+	// 	// debug("Entity: %+v\n", entity)
+	// }
+
+	// print the grid
+	for i := 0; i < state.Height; i++ {
+		for j := 0; j < state.Width; j++ {
+			fmt.Fprintf(os.Stderr, "%d ", state.Grid[i][j])
+		}
+		fmt.Fprintf(os.Stderr, "\n")
+	}
+
+	state.MyProteins = make([]int, 4)
+	state.OppProteins = make([]int, 4)
+
+	// myD: your protein stock
+	var myA, myB, myC, myD int
+	fmt.Scan(&myA, &myB, &myC, &myD)
+
+	debug("My proteins: A: %d, B: %d, C: %d, D: %d\n", myA, myB, myC, myD)
+
+	state.MyProteins[0] = myA
+	state.MyProteins[1] = myB
+	state.MyProteins[2] = myC
+	state.MyProteins[3] = myD
+
+	// oppD: opponent's protein stock
+	var oppA, oppB, oppC, oppD int
+	fmt.Scan(&oppA, &oppB, &oppC, &oppD)
+
+	debug("Opponent proteins: A: %d, B: %d, C: %d, D: %d\n", oppA, oppB, oppC, oppD)
+
+	state.OppProteins[0] = oppA
+	state.OppProteins[1] = oppB
+	state.OppProteins[2] = oppC
+	state.OppProteins[3] = oppD
+
+	// requiredActionsCount: your number of organisms, output an action for each one in any order
+	var requiredActionsCount int
+	fmt.Scan(&requiredActionsCount)
+
+	debug("Required actions count: %d\n", requiredActionsCount)
+}
+
 func main() {
 	// width: columns in the game grid
 	// height: rows in the game grid
 	fmt.Scan(&state.Width, &state.Height)
 
 	for {
+		parseTurnState()
 
-		state.Grid = make([][]int, state.Height)
-		for i := 0; i < state.Height; i++ {
-			state.Grid[i] = make([]int, state.Width)
-			for j := 0; j < state.Width; j++ {
-				state.Grid[i][j] = -1
-			}
-		}
-
-		var entityCount int
-		fmt.Scan(&entityCount)
-
-		state.Entities = make([]Entity, entityCount)
-
-		for i := 0; i < entityCount; i++ {
-			// y: grid coordinate
-			// _type: WALL, ROOT, BASIC, TENTACLE, HARVESTER, SPORER, A, B, C, D
-			// owner: 1 if your organ, 0 if enemy organ, -1 if neither
-			// organId: id of this entity if it's an organ, 0 otherwise
-			// organDir: N,E,S,W or X if not an organ
-			var x, y int
-			var _type string
-			var owner, organId int
-			var organDir string
-			var organParentId, organRootId int
-			fmt.Scan(&x, &y, &_type, &owner, &organId, &organDir, &organParentId, &organRootId)
-
-			// debug("x: %d, y: %d, type: %s, owner: %d, organId: %d, organDir: %s, organParentId: %d, organRootId: %d\n", x, y, _type, owner, organId, organDir, organParentId, organRootId)
-
-			entity := Entity{
-				coord:         Coord{x, y},
-				_type:         parseType(_type),
-				owner:         parseOwner(owner),
-				organId:       organId,
-				organDir:      parseDir(organDir),
-				organParentId: organParentId,
-				organRootId:   organRootId,
-			}
-
-			state.Entities[i] = entity
-
-			state.Grid[y][x] = i
-		}
-
-		// debug the entities
-		// for _, entity := range state.Entities {
-		// 	// debug("Entity: %+v\n", entity)
-		// }
-
-		// print the grid
-		for i := 0; i < state.Height; i++ {
-			for j := 0; j < state.Width; j++ {
-				fmt.Fprintf(os.Stderr, "%d ", state.Grid[i][j])
-			}
-			fmt.Fprintf(os.Stderr, "\n")
-		}
-
-		state.MyProteins = make([]int, 4)
-		state.OppProteins = make([]int, 4)
-
-		// myD: your protein stock
-		var myA, myB, myC, myD int
-		fmt.Scan(&myA, &myB, &myC, &myD)
-
-		debug("My proteins: A: %d, B: %d, C: %d, D: %d\n", myA, myB, myC, myD)
-
-		state.MyProteins[0] = myA
-		state.MyProteins[1] = myB
-		state.MyProteins[2] = myC
-		state.MyProteins[3] = myD
-
-		// oppD: opponent's protein stock
-		var oppA, oppB, oppC, oppD int
-		fmt.Scan(&oppA, &oppB, &oppC, &oppD)
-
-		debug("Opponent proteins: A: %d, B: %d, C: %d, D: %d\n", oppA, oppB, oppC, oppD)
-
-		state.OppProteins[0] = oppA
-		state.OppProteins[1] = oppB
-		state.OppProteins[2] = oppC
-		state.OppProteins[3] = oppD
-
-		// requiredActionsCount: your number of organisms, output an action for each one in any order
-		var requiredActionsCount int
-		fmt.Scan(&requiredActionsCount)
-
-		debug("Required actions count: %d\n", requiredActionsCount)
-
-		for i := 0; i < requiredActionsCount; i++ {
+		for i := 0; i < state.RequiredActionsCount; i++ {
 
 			// get the first root
 			var root Entity
