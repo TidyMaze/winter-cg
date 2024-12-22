@@ -642,9 +642,11 @@ func findNonHarvestedProteins() []Entity {
 }
 
 func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity) {
+	// find the closest protein and organ
 	closestProtein, closestOrgan := findClosestProteinAndOrgan(nonHarvestedProteins, organs)
 	debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
 
+	// find the closest neighbor of the closest protein that can be reached by the closest organ
 	closestNeighbor, closestOrgan := findClosestNeighborToProtein(closestProtein, organs)
 	debug("Closest neighbor: %+v\n", closestNeighbor)
 
