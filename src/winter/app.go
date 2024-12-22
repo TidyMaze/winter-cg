@@ -475,7 +475,7 @@ func sendActions() {
 		var nonHarvestedProteins []Entity
 
 		for _, entity := range state.Entities {
-			if entity._type == PROTEIN_A {
+			if entity._type.isProtein() {
 				// find my neighbor harvesters of this protein (must be facing the protein)
 				myHarvesters := make([]Entity, 0)
 				for _, offset := range offsets {
@@ -497,7 +497,6 @@ func sendActions() {
 				if len(myHarvesters) > 0 {
 					debug("My harvesters for protein: %+v: %+v\n", entity, myHarvesters)
 				} else {
-					debug("No harvesters for protein: %+v\n", entity)
 					nonHarvestedProteins = append(nonHarvestedProteins, entity)
 				}
 			}
