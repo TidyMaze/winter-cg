@@ -613,11 +613,14 @@ func sendActions() {
 					for _, entity := range state.Entities {
 						if entity._type.isProtein() && !isAlreadyHarvested(entity, nonHarvestedProteins) {
 							for _, organ := range organs {
-								dist := distance(entity.coord, organ.coord)
-								if dist < minDistance {
-									minDistance = dist
-									closestProtein = entity
-									closestOrgan = organ
+
+								if organ._type == BASIC || organ._type == ROOT {
+									dist := distance(entity.coord, organ.coord)
+									if dist < minDistance {
+										minDistance = dist
+										closestProtein = entity
+										closestOrgan = organ
+									}
 								}
 							}
 						}
