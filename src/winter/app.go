@@ -502,7 +502,12 @@ func sendActions() {
 			}
 		}
 
-		debug("Non-harvested proteins: %+v\n", nonHarvestedProteins)
+		nonHarvestedProteinsIds := make([]int, 0)
+		for _, protein := range nonHarvestedProteins {
+			nonHarvestedProteinsIds = append(nonHarvestedProteinsIds, protein.organId)
+		}
+
+		debug("Non-harvested proteins: %+v\n", nonHarvestedProteinsIds)
 
 		if len(nonHarvestedProteins) > 0 {
 
@@ -577,7 +582,8 @@ func sendActions() {
 								for _, dir := range []Dir{N, S, W, E} {
 									sporeCoord := findSporeCellInDirection(sporerCoord, dir, sporeCells)
 
-									if sporeCoord.isValid() && distance(sporerCoord, sporeCoord) > 1 {
+									if sporeCoord.isValid() &&
+										distance(sporerCoord, sporeCoord) > 2 {
 										debug("Organ: %+v can reach spore cell: %+v after sporing in direction: %s from cell: %+v\n", organ, sporeCoord, showDir(dir), sporerCoord)
 										sporerPlans = append(sporerPlans, SporePlan{
 											organ:          organ,
