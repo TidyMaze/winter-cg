@@ -498,6 +498,9 @@ func sendActions() {
 
 	enemyTentaclesTargets := findEnemyTentaclesTargets()
 
+	// find the non-harvested proteins
+	nonHarvestedProteins := findNonHarvestedProteins()
+
 	for i := 0; i < state.RequiredActionsCount; i++ {
 		// get the first root
 		var root Entity = roots[i]
@@ -518,9 +521,6 @@ func sendActions() {
 
 			continue
 		}
-
-		// find the non-harvested proteins
-		nonHarvestedProteins := findNonHarvestedProteins()
 
 		if len(nonHarvestedProteins) > 0 {
 
