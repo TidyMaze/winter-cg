@@ -583,7 +583,7 @@ func sendActions() {
 									sporeCoord := findSporeCellInDirection(sporerCoord, dir, sporeCells)
 
 									if sporeCoord.isValid() &&
-										distance(sporerCoord, sporeCoord) > 2 {
+										distance(sporerCoord, sporeCoord) > 4 {
 										debug("Organ: %+v can reach spore cell: %+v after sporing in direction: %s from cell: %+v\n", organ, sporeCoord, showDir(dir), sporerCoord)
 										sporerPlans = append(sporerPlans, SporePlan{
 											organ:          organ,
@@ -622,14 +622,11 @@ func sendActions() {
 					for _, entity := range state.Entities {
 						if entity._type.isProtein() && !isAlreadyHarvested(entity, nonHarvestedProteins) {
 							for _, organ := range organs {
-
-								if organ._type == BASIC || organ._type == ROOT {
-									dist := distance(entity.coord, organ.coord)
-									if dist < minDistance {
-										minDistance = dist
-										closestProtein = entity
-										closestOrgan = organ
-									}
+								dist := distance(entity.coord, organ.coord)
+								if dist < minDistance {
+									minDistance = dist
+									closestProtein = entity
+									closestOrgan = organ
 								}
 							}
 						}
