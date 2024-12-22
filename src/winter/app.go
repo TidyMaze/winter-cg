@@ -564,6 +564,12 @@ func sendActions() {
 
 				if len(sporerPlans) > 0 {
 					debug("Spore plans: %+v\n", sporerPlans)
+
+					// choose the best spore plan
+					bestPlan := sporerPlans[0]
+
+					// grow the sporer
+					fmt.Printf("GROW %d %d %d SPORER %s\n", bestPlan.organ.organId, bestPlan.newSporerCoord.x, bestPlan.newSporerCoord.y, showDir(bestPlan.sporerDir))
 				} else {
 					debug("No spore plans\n")
 				}
