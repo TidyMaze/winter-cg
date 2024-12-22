@@ -396,12 +396,12 @@ func main() {
 
 			debug("Non-harvested proteins: %+v\n", nonHarvestedProteins)
 
-			// find the prootein that is the closest from any of the organs
+			// find the prootein that is the closest from any of the organs and that is not harvested
 			var closestProtein Entity
 			var closestOrgan Entity
 			minDistance := 1000
 			for _, entity := range entities {
-				if entity._type == PROTEIN_A {
+				if entity._type == PROTEIN_A && !isAlreadyHarvested(entity, nonHarvestedProteins) {
 					for _, organ := range organs {
 						dist := distance(entity.coord, organ.coord)
 						if dist < minDistance {
@@ -476,4 +476,13 @@ func main() {
 			}
 		}
 	}
+}
+
+func isAlreadyHarvested(entity Entity, nonHarvestedProteins []Entity) bool {
+	for _, protein := range nonHarvestedProteins {
+		if protein.coord.x == entity.coord.x && protein.coord.y == entity.coord.y {
+			return false
+		}
+	}
+	return true
 }
