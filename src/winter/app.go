@@ -542,29 +542,7 @@ func sendActions() {
 				fmt.Fprintf(os.Stderr, "\n")
 			}
 
-			spored := false
-
-			if canSpore(state.MyProteins) {
-				// check if I have a sporer that can spore a new root into a spore cell
-				sporer := Entity{}
-				sporeCoord := Coord{-1, -1}
-				for _, entity := range state.Entities {
-					if entity._type == SPORER && entity.owner == ME {
-						sporeCooord := findSporeCellInDirection(entity.coord, entity.organDir, sporeCells)
-						if sporeCooord.isValid() {
-							sporer = entity
-							sporeCoord = sporeCooord
-							break
-						}
-					}
-				}
-
-				if sporeCoord.isValid() {
-					spored = true
-					debug("Found a spore cell: %+v for sporer: %+v\n", sporeCoord, sporer)
-					fmt.Printf("SPORE %d %d %d\n", sporer.organId, sporeCoord.x, sporeCoord.y)
-				}
-			}
+			spored := sporeIfPossible(sporeCells)
 
 			if !spored {
 				grewSporer := false
@@ -742,6 +720,32 @@ func sendActions() {
 			fmt.Printf("GROW %d %d %d BASIC\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y)
 		}
 	}
+}
+
+func sporeIfPossible(sporeCells [][]bool) bool {
+	if canSpore(state.MyProteins) {
+		// check if I have a sporer that can spore a new root into a spore cell
+		sporer := Entity{}
+		sporeCoord := Coord{-1, -1}
+		for _, entity := range state.Entities {
+			if entity._type == SPORER && entity.owner == ME {
+				sporeCooord := findSporeCellInDirection(entity.coord, entity.organDir, sporeCells)
+				if sporeCooord.isValid() {
+					sporer = entity
+					sporeCoord = sporeCooord
+					break
+				}
+			}
+		}
+
+		if sporeCoord.isValid() {
+			debug("Found a spore cell: %+v for sporer: %+v\n", sporeCoord, sporer)
+			fmt.Printf("SPORE %d %d %d\n", sporer.organId, sporeCoord.x, sporeCoord.y)
+			return true
+		}
+	}
+
+	return false
 }
 
 func canSpore(proteinCounts []int) bool {
