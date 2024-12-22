@@ -414,16 +414,18 @@ func main() {
 			}
 
 			if minDistance == 1000 {
-				// there is no protein on the grid, just grow a basic organ to the closest free cell from the root
+				// there is no protein on the grid, find a cell that is the closest from a free cell and grow a basic organ
 				var closestFreeCell Coord
 				minDistance = 1000
 				for i := 0; i < height; i++ {
 					for j := 0; j < width; j++ {
 						if grid[i][j] == -1 {
-							dist := distance(root.coord, Coord{j, i})
-							if dist < minDistance {
-								minDistance = dist
-								closestFreeCell = Coord{j, i}
+							for _, organ := range organs {
+								dist := distance(Coord{j, i}, organ.coord)
+								if dist < minDistance {
+									minDistance = dist
+									closestFreeCell = Coord{j, i}
+								}
 							}
 						}
 					}
@@ -433,7 +435,7 @@ func main() {
 
 				fmt.Printf("GROW %d %d %d BASIC\n", root.organId, closestFreeCell.x, closestFreeCell.y)
 			} else {
-				debug("Closest protein: %+v\n", closestProtein)
+				debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
 
 				// find the neighbor of the closest organ that is the closest to the closest protein
 				var closestNeighbor Coord
@@ -442,7 +444,8 @@ func main() {
 				for _, offset := range offsets {
 					coord := Coord{closestOrgan.coord.x + offset.x, closestOrgan.coord.y + offset.y}
 					if coord.x >= 0 && coord.x < width && coord.y >= 0 && coord.y < height {
-						if grid[coord.y][coord.x] == -1 || entities[grid[coord.y][coord.x]]._type == PROTEIN_A {
+						// never grow on a protein
+						if grid[coord.y][coord.x] == -1 {
 							dist := distance(coord, closestProtein.coord)
 							if dist < minDistance {
 								minDistance = dist
