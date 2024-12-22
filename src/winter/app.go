@@ -128,14 +128,14 @@ const (
 	ROOT
 	BASIC
 	HARVESTER
-	PROTEINE_A
+	PROTEIN_A
 )
 
 type Dir int
 
 const (
 	N Dir = iota
-	s
+	S
 	W
 	E
 )
@@ -170,7 +170,7 @@ func parseDir(dir string) Dir {
 	case "N":
 		return N
 	case "S":
-		return s
+		return S
 	case "E":
 		return E
 	case "W":
@@ -183,7 +183,7 @@ func showDir(dir Dir) string {
 	switch dir {
 	case N:
 		return "N"
-	case s:
+	case S:
 		return "S"
 	case E:
 		return "E"
@@ -204,7 +204,7 @@ func parseType(_type string) EntityType {
 	case "HARVESTER":
 		return HARVESTER
 	case "A":
-		return PROTEINE_A
+		return PROTEIN_A
 	}
 	panic(fmt.Sprintf("Unknown type %s", _type))
 }
@@ -354,17 +354,57 @@ func main() {
 
 			debug("Organs: %+v\n", organs)
 
+			// find the non-harvested proteins
+			var nonHarvestedProteins []Entity
+
+			for _, entity := range entities {
+				if entity._type == PROTEIN_A {
+					// find my neighbor harvesters of this protein (must be facing the protein)
+					myHarvesters := make([]Entity, 0)
+					for _, offset := range offsets {
+						coord := Coord{entity.coord.x + offset.x, entity.coord.y + offset.y}
+						if coord.x >= 0 && coord.x < width && coord.y >= 0 && coord.y < height {
+							if grid[coord.y][coord.x] != -1 {
+								neighbor := entities[grid[coord.y][coord.x]]
+								if neighbor._type == HARVESTER && neighbor.owner == ME {
+									if coord.y < entity.coord.y && neighbor.organDir == S {
+										myHarvesters = append(myHarvesters, neighbor)
+									} else if coord.y > entity.coord.y && neighbor.organDir == N {
+										myHarvesters = append(myHarvesters, neighbor)
+									} else if coord.x < entity.coord.x && neighbor.organDir == E {
+										myHarvesters = append(myHarvesters, neighbor)
+									} else if coord.x > entity.coord.x && neighbor.organDir == W {
+										myHarvesters = append(myHarvesters, neighbor)
+									} else {
+										debug("Neighbor harvester %+v is not facing the protein %+v\n", neighbor, entity)
+									}
+								}
+							}
+						}
+					}
+
+					if len(myHarvesters) > 0 {
+						debug("My harvesters for protein: %+v: %+v\n", entity, myHarvesters)
+					} else {
+						debug("No harvesters for protein: %+v\n", entity)
+						nonHarvestedProteins = append(nonHarvestedProteins, entity)
+					}
+				}
+			}
+
+			debug("Non-harvested proteins: %+v\n", nonHarvestedProteins)
+
 			// find the prootein that is the closest from any of the organs
-			var closestProteine Entity
+			var closestProtein Entity
 			var closestOrgan Entity
 			minDistance := 1000
 			for _, entity := range entities {
-				if entity._type == PROTEINE_A {
+				if entity._type == PROTEIN_A {
 					for _, organ := range organs {
 						dist := distance(entity.coord, organ.coord)
 						if dist < minDistance {
 							minDistance = dist
-							closestProteine = entity
+							closestProtein = entity
 							closestOrgan = organ
 						}
 					}
@@ -372,7 +412,7 @@ func main() {
 			}
 
 			if minDistance == 1000 {
-				// there is no proteine on the grid, just grow a basic organ to the closest free cell from the root
+				// there is no protein on the grid, just grow a basic organ to the closest free cell from the root
 				var closestFreeCell Coord
 				minDistance = 1000
 				for i := 0; i < height; i++ {
@@ -391,17 +431,17 @@ func main() {
 
 				fmt.Printf("GROW %d %d %d BASIC\n", root.organId, closestFreeCell.x, closestFreeCell.y)
 			} else {
-				debug("Closest proteine: %+v\n", closestProteine)
+				debug("Closest protein: %+v\n", closestProtein)
 
-				// find the neighbor of the closest organ that is the closest to the closest proteine
+				// find the neighbor of the closest organ that is the closest to the closest protein
 				var closestNeighbor Coord
 				minDistance = 1000
 
 				for _, offset := range offsets {
 					coord := Coord{closestOrgan.coord.x + offset.x, closestOrgan.coord.y + offset.y}
 					if coord.x >= 0 && coord.x < width && coord.y >= 0 && coord.y < height {
-						if grid[coord.y][coord.x] == -1 || entities[grid[coord.y][coord.x]]._type == PROTEINE_A {
-							dist := distance(coord, closestProteine.coord)
+						if grid[coord.y][coord.x] == -1 || entities[grid[coord.y][coord.x]]._type == PROTEIN_A {
+							dist := distance(coord, closestProtein.coord)
 							if dist < minDistance {
 								minDistance = dist
 								closestNeighbor = coord
@@ -413,15 +453,15 @@ func main() {
 				debug("Closest neighbor: %+v\n", closestNeighbor)
 
 				if minDistance == 1 {
-					// put a harvester facing the proteine
+					// put a harvester facing the protein
 					harvesterDir := N
-					if closestNeighbor.x < closestProteine.coord.x {
+					if closestNeighbor.x < closestProtein.coord.x {
 						harvesterDir = E
-					} else if closestNeighbor.x > closestProteine.coord.x {
+					} else if closestNeighbor.x > closestProtein.coord.x {
 						harvesterDir = W
-					} else if closestNeighbor.y < closestProteine.coord.y {
-						harvesterDir = s
-					} else if closestNeighbor.y > closestProteine.coord.y {
+					} else if closestNeighbor.y < closestProtein.coord.y {
+						harvesterDir = S
+					} else if closestNeighbor.y > closestProtein.coord.y {
 						harvesterDir = N
 					}
 
