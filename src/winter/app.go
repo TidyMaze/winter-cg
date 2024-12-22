@@ -199,6 +199,10 @@ const (
 	PROTEIN_D
 )
 
+func (t EntityType) isProtein() bool {
+	return t == PROTEIN_A || t == PROTEIN_B || t == PROTEIN_C || t == PROTEIN_D
+}
+
 type Dir int
 
 const (
@@ -600,7 +604,7 @@ func sendActions() {
 					var closestOrgan Entity
 					minDistance := 1000
 					for _, entity := range state.Entities {
-						if entity._type == PROTEIN_A && !isAlreadyHarvested(entity, nonHarvestedProteins) {
+						if entity._type.isProtein() && !isAlreadyHarvested(entity, nonHarvestedProteins) {
 							for _, organ := range organs {
 								dist := distance(entity.coord, organ.coord)
 								if dist < minDistance {
