@@ -487,31 +487,7 @@ func sendActions() {
 		if len(nonHarvestedProteins) > 0 {
 
 			// build a map of the intersting spore cells (cells that are at distance max 1 from a non harvested protein)
-			sporeCells := make([][]bool, state.Height)
-			for i := 0; i < state.Height; i++ {
-				sporeCells[i] = make([]bool, state.Width)
-			}
-
-			for _, protein := range nonHarvestedProteins {
-				for _, offset := range offsets {
-					coord := protein.coord.add(offset)
-					if coord.isValid() && state.Grid[coord.y][coord.x] == -1 {
-						sporeCells[coord.y][coord.x] = true
-					}
-				}
-			}
-
-			debug("Spore cells:\n")
-			for i := 0; i < state.Height; i++ {
-				for j := 0; j < state.Width; j++ {
-					if sporeCells[i][j] {
-						fmt.Fprintf(os.Stderr, "X ")
-					} else {
-						fmt.Fprintf(os.Stderr, "  ")
-					}
-				}
-				fmt.Fprintf(os.Stderr, "\n")
-			}
+			sporeCells := buildSporeCellsMap(nonHarvestedProteins)
 
 			spored := sporeIfPossible(sporeCells)
 
@@ -588,6 +564,36 @@ func sendActions() {
 			fmt.Printf("GROW %d %d %d BASIC\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y)
 		}
 	}
+}
+
+func buildSporeCellsMap(nonHarvestedProteins []Entity) [][]bool {
+	sporeCells := make([][]bool, state.Height)
+	for i := 0; i < state.Height; i++ {
+		sporeCells[i] = make([]bool, state.Width)
+	}
+
+	for _, protein := range nonHarvestedProteins {
+		for _, offset := range offsets {
+			coord := protein.coord.add(offset)
+			if coord.isValid() && state.Grid[coord.y][coord.x] == -1 {
+				sporeCells[coord.y][coord.x] = true
+			}
+		}
+	}
+
+	debug("Spore cells:\n")
+	for i := 0; i < state.Height; i++ {
+		for j := 0; j < state.Width; j++ {
+			if sporeCells[i][j] {
+				fmt.Fprintf(os.Stderr, "X ")
+			} else {
+				fmt.Fprintf(os.Stderr, "  ")
+			}
+		}
+		fmt.Fprintf(os.Stderr, "\n")
+	}
+
+	return sporeCells
 }
 
 func findNonHarvestedProteins() []Entity {
