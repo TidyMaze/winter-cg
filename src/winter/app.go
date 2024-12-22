@@ -744,7 +744,8 @@ func findSporeCellInDirection(coord Coord, dir Dir, sporeCells [][]bool) Coord {
 			break
 		}
 
-		if state.Grid[sporeCoord.y][sporeCoord.x] != -1 {
+		if state.Grid[sporeCoord.y][sporeCoord.x] != -1 &&
+			!(state.Entities[state.Grid[sporeCoord.y][sporeCoord.x]]._type.isProtein()) {
 			break
 		}
 
