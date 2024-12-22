@@ -642,61 +642,59 @@ func findNonHarvestedProteins() []Entity {
 }
 
 func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity) {
-	// find the protein that is the closest from any of the organs and that is not harvested
+	closestProtein, closestOrgan := findClosestProteinAndOrgan(nonHarvestedProteins, organs)
+	debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
+
+	closestNeighbor, closestOrgan := findClosestNeighborToProtein(closestProtein, organs)
+	debug("Closest neighbor: %+v\n", closestNeighbor)
+
+	if distance(closestNeighbor, closestProtein.coord) == 1 {
+		harvesterDir := findDirRelativeTo(closestNeighbor, closestProtein.coord)
+		fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
+	} else {
+		fmt.Printf("GROW %d %d %d BASIC\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y)
+	}
+}
+
+func findClosestProteinAndOrgan(nonHarvestedProteins []Entity, organs []Entity) (Entity, Entity) {
 	var closestProtein Entity
 	var closestOrgan Entity
 	minDistance := 1000
-	for _, entity := range state.Entities {
-		if entity._type.isProtein() && !isAlreadyHarvested(entity, nonHarvestedProteins) {
-			for _, organ := range organs {
-				dist := distance(entity.coord, organ.coord)
+
+	for _, protein := range nonHarvestedProteins {
+		for _, organ := range organs {
+			dist := distance(protein.coord, organ.coord)
+			if dist < minDistance {
+				minDistance = dist
+				closestProtein = protein
+				closestOrgan = organ
+			}
+		}
+	}
+
+	return closestProtein, closestOrgan
+}
+
+func findClosestNeighborToProtein(protein Entity, organs []Entity) (Coord, Entity) {
+	var closestNeighbor Coord
+	var closestOrgan Entity
+	minDistance := 1000
+
+	for _, organ := range organs {
+		for _, offset := range offsets {
+			neighbor := organ.coord.add(offset)
+			if neighbor.isValid() && state.isWalkable(neighbor) {
+				dist := distance(neighbor, protein.coord)
 				if dist < minDistance {
 					minDistance = dist
-					closestProtein = entity
+					closestNeighbor = neighbor
 					closestOrgan = organ
 				}
 			}
 		}
 	}
 
-	debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
-
-	// find the neighbor of any organ that is the closest to the closest protein
-	var closestNeighbor Coord = Coord{-1, -1}
-	minDistanceFromNeighbor := 1000
-
-	for _, organ := range state.Entities {
-		if organ.owner == ME {
-			for _, offset := range offsets {
-				coord := organ.coord.add(offset)
-				if coord.isValid() {
-					if state.isWalkable(coord) {
-						dist := distance(coord, closestProtein.coord)
-						if dist < minDistanceFromNeighbor {
-							minDistanceFromNeighbor = dist
-							closestNeighbor = coord
-							closestOrgan = organ
-						}
-					}
-				}
-			}
-		}
-	}
-
-	debug("Closest neighbor: %+v\n", closestNeighbor)
-
-	if minDistanceFromNeighbor == 1 {
-		// put a harvester facing the protein
-		harvesterDir := N
-
-		harvesterDir = findDirRelativeTo(closestNeighbor, closestProtein.coord)
-
-		fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
-	} else {
-		// grow a basic organ to get closer to the protein
-		fmt.Printf("GROW %d %d %d BASIC\n", closestOrgan.organId, closestNeighbor.x,
-			closestNeighbor.y)
-	}
+	return closestNeighbor, closestOrgan
 }
 
 func growSporerIfPossible(sporeCells [][]bool, organs []Entity) bool {
