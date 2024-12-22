@@ -446,7 +446,7 @@ func sendActions() {
 			}
 		}
 
-		debug("Root: %+v\n", root)
+		debug("=== Root: %+v ===\n", root)
 
 		// find all organs that have the organRootId equal to the root.organId
 		var organs []Entity
@@ -605,19 +605,24 @@ func sendActions() {
 
 					debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
 
-					// find the neighbor of the closest organ that is the closest to the closest protein
-					var closestNeighbor Coord
+					// find the neighbor of any organ that is the closest to the closest protein
+					var closestNeighbor Coord = Coord{-1, -1}
 					minDistanceFromNeighbor := 1000
 
-					for _, offset := range offsets {
-						coord := closestOrgan.coord.add(offset)
-						if coord.isValid() {
-							// never grow on a protein
-							if state.Grid[coord.y][coord.x] == -1 {
-								dist := distance(coord, closestProtein.coord)
-								if dist < minDistanceFromNeighbor {
-									minDistanceFromNeighbor = dist
-									closestNeighbor = coord
+					for _, organ := range state.Entities {
+						if (organ._type == BASIC || organ._type == ROOT) && organ.owner == ME {
+							for _, offset := range offsets {
+								coord := organ.coord.add(offset)
+								if coord.isValid() {
+									// never grow on a protein
+									if state.Grid[coord.y][coord.x] == -1 {
+										dist := distance(coord, closestProtein.coord)
+										if dist < minDistanceFromNeighbor {
+											minDistanceFromNeighbor = dist
+											closestNeighbor = coord
+											closestOrgan = organ
+										}
+									}
 								}
 							}
 						}
