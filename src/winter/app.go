@@ -176,6 +176,17 @@ type Coord struct {
 	x, y int
 }
 
+func (c Coord) add(offset Coord) Coord {
+	return Coord{c.x + offset.x, c.y + offset.y}
+}
+
+func (c Coord) isValid() bool {
+	return c.x >= 0 && c.x < Width && c.y >= 0 && c.y < Height
+}
+
+var Height int
+var Width int
+
 type EntityType int
 
 const (
@@ -302,15 +313,14 @@ func abs(a int) int {
 func main() {
 	// width: columns in the game grid
 	// height: rows in the game grid
-	var width, height int
-	fmt.Scan(&width, &height)
+	fmt.Scan(&Width, &Height)
 
 	for {
 
-		grid := make([][]int, height)
-		for i := 0; i < height; i++ {
-			grid[i] = make([]int, width)
-			for j := 0; j < width; j++ {
+		grid := make([][]int, Height)
+		for i := 0; i < Height; i++ {
+			grid[i] = make([]int, Width)
+			for j := 0; j < Width; j++ {
 				grid[i][j] = -1
 			}
 		}
@@ -356,8 +366,8 @@ func main() {
 		// }
 
 		// print the grid
-		for i := 0; i < height; i++ {
-			for j := 0; j < width; j++ {
+		for i := 0; i < Height; i++ {
+			for j := 0; j < Width; j++ {
 				fmt.Fprintf(os.Stderr, "%d ", grid[i][j])
 			}
 			fmt.Fprintf(os.Stderr, "\n")
@@ -425,8 +435,8 @@ func main() {
 					// find my neighbor harvesters of this protein (must be facing the protein)
 					myHarvesters := make([]Entity, 0)
 					for _, offset := range offsets {
-						coord := Coord{entity.coord.x + offset.x, entity.coord.y + offset.y}
-						if coord.x >= 0 && coord.x < width && coord.y >= 0 && coord.y < height {
+						coord := entity.coord.add(offset)
+						if coord.isValid() {
 							if grid[coord.y][coord.x] != -1 {
 								neighbor := entities[grid[coord.y][coord.x]]
 								if neighbor._type == HARVESTER && neighbor.owner == ME {
@@ -463,6 +473,35 @@ func main() {
 					// check if the closest organ can reach the closest protein using sporers
 
 					debug("Can grow a sporer\n")
+
+					// find any neighbor of my organs that can reach a cell that is at distance 1 from a protein
+					for _, organ := range organs {
+						for _, offset := range offsets {
+							coord := organ.coord.add(offset)
+							if coord.isValid() {
+								if grid[coord.y][coord.x] == -1 {
+									for _, protein := range nonHarvestedProteins {
+										if distance(coord, protein.coord) == 1 {
+											// put a sporer facing the protein
+											sporerDir := N
+											if coord.x < protein.coord.x {
+												sporerDir = E
+											} else if coord.x > protein.coord.x {
+												sporerDir = W
+											} else if coord.y < protein.coord.y {
+												sporerDir = S
+											} else if coord.y > protein.coord.y {
+												sporerDir = N
+											}
+
+											fmt.Printf("GROW %d %d %d SPORER %s\n", organ.organId, coord.x, coord.y, showDir(sporerDir))
+											break
+										}
+									}
+								}
+							}
+						}
+					}
 				} else {
 					// find the protein that is the closest from any of the organs and that is not harvested
 					var closestProtein Entity
@@ -488,8 +527,8 @@ func main() {
 					minDistanceFromNeighbor := 1000
 
 					for _, offset := range offsets {
-						coord := Coord{closestOrgan.coord.x + offset.x, closestOrgan.coord.y + offset.y}
-						if coord.x >= 0 && coord.x < width && coord.y >= 0 && coord.y < height {
+						coord := closestOrgan.coord.add(offset)
+						if coord.isValid() {
 							// never grow on a protein
 							if grid[coord.y][coord.x] == -1 {
 								dist := distance(coord, closestProtein.coord)
@@ -540,8 +579,8 @@ func main() {
 				var bestOfEnemyOrgans Entity
 				bestScore := -1000
 
-				for i := 0; i < height; i++ {
-					for j := 0; j < width; j++ {
+				for i := 0; i < Height; i++ {
+					for j := 0; j < Width; j++ {
 						if grid[i][j] == -1 {
 							cell := Coord{j, i}
 
