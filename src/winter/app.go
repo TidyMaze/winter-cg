@@ -207,10 +207,28 @@ const (
 )
 
 var offsets = []Coord{
+	// N, S, W, E
 	{0, -1},
 	{0, 1},
 	{-1, 0},
 	{1, 0},
+}
+
+func findDirRelativeTo(from, to Coord) Dir {
+	if from.x == to.x {
+		if from.y < to.y {
+			return S
+		} else {
+			return N
+		}
+	} else if from.y == to.y {
+		if from.x < to.x {
+			return E
+		} else {
+			return W
+		}
+	}
+	panic(fmt.Sprintf("Unknown direction from %+v to %+v", from, to))
 }
 
 type Owner int
@@ -410,7 +428,6 @@ func parseTurnState() {
 
 func sendActions() {
 	for i := 0; i < state.RequiredActionsCount; i++ {
-
 		// get the first root
 		var root Entity
 		for _, entity := range state.Entities {
@@ -550,15 +567,8 @@ func sendActions() {
 				if minDistanceFromNeighbor == 1 {
 					// put a harvester facing the protein
 					harvesterDir := N
-					if closestNeighbor.x < closestProtein.coord.x {
-						harvesterDir = E
-					} else if closestNeighbor.x > closestProtein.coord.x {
-						harvesterDir = W
-					} else if closestNeighbor.y < closestProtein.coord.y {
-						harvesterDir = S
-					} else if closestNeighbor.y > closestProtein.coord.y {
-						harvesterDir = N
-					}
+
+					harvesterDir = findDirRelativeTo(closestNeighbor, closestProtein.coord)
 
 					fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
 				} else {
