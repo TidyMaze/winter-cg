@@ -337,6 +337,13 @@ func abs(a int) int {
 	return a
 }
 
+type SporePlan struct {
+	organ          Entity // the organ from which to grow the sporer
+	newSporerCoord Coord  // the coord of the sporer to grow
+	sporerDir      Dir    // the direction of the sporer
+	target         Coord  // the target coord of the sporer (either a protein or a neighbor of a protein)
+}
+
 func parseTurnState() {
 	state.Grid = make([][]int, state.Height)
 	for i := 0; i < state.Height; i++ {
@@ -501,7 +508,7 @@ func sendActions() {
 				for _, protein := range nonHarvestedProteins {
 					for _, offset := range offsets {
 						coord := protein.coord.add(offset)
-						if coord.isValid() {
+						if coord.isValid() && state.Grid[coord.y][coord.x] == -1 {
 							sporeCells[coord.y][coord.x] = true
 						}
 					}
@@ -519,7 +526,47 @@ func sendActions() {
 					fmt.Fprintf(os.Stderr, "\n")
 				}
 
-				// find any neighbor of my organs that can reach a cell that is at distance 1 from a protein
+				// find any neighbor of my organs that can reach a spore cell in any direction
+
+				sporerPlans := make([]SporePlan, 0)
+
+				for _, organ := range organs {
+					for _, offset := range offsets {
+						coord := organ.coord.add(offset)
+						if coord.isValid() {
+							// simulate the spore in all directions until it reaches a spore cell
+							for _, dir := range []Dir{N, S, W, E} {
+								sporeCoord := coord
+								for {
+									sporeCoord = sporeCoord.add(offsets[dir])
+									if !sporeCoord.isValid() {
+										break
+									}
+
+									if state.Grid[sporeCoord.y][sporeCoord.x] != -1 {
+										break
+									}
+
+									if sporeCells[sporeCoord.y][sporeCoord.x] {
+										debug("Organ: %+v can reach spore cell: %+v after sporing in direction: %s from cell: %+v\n", organ, sporeCoord, showDir(dir), coord)
+										sporerPlans = append(sporerPlans, SporePlan{
+											organ:          organ,
+											newSporerCoord: coord,
+											sporerDir:      dir,
+											target:         sporeCoord,
+										})
+									}
+								}
+							}
+						}
+					}
+				}
+
+				if len(sporerPlans) > 0 {
+					debug("Spore plans: %+v\n", sporerPlans)
+				} else {
+					debug("No spore plans\n")
+				}
 			} else {
 				// find the protein that is the closest from any of the organs and that is not harvested
 				var closestProtein Entity
