@@ -533,7 +533,7 @@ func sendActions() {
 				grewSporer := growSporerIfPossible(sporeCells, organs)
 
 				if !grewSporer {
-					growTowardsProtein(nonHarvestedProteins, organs)
+					growTowardsProtein(nonHarvestedProteins, organs, enemyTentaclesTargets)
 				}
 			}
 		} else {
@@ -751,13 +751,13 @@ func findNonHarvestedProteins() []Entity {
 	return nonHarvestedProteins
 }
 
-func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity) {
+func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTentaclesTargets [][]bool) {
 	// find the closest protein and organ
 	closestProtein, closestOrgan := findClosestProteinAndOrgan(nonHarvestedProteins, organs)
 	debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
 
 	// find the closest neighbor of the closest protein that can be reached by the closest organ
-	closestNeighbor, closestOrgan := findClosestNeighborToProtein(closestProtein, organs)
+	closestNeighbor, closestOrgan := findClosestNeighborToProtein(closestProtein, organs, enemyTentaclesTargets)
 	debug("Closest neighbor: %+v\n", closestNeighbor)
 
 	if distance(closestNeighbor, closestProtein.coord) == 1 && canGrow(state.MyProteins, HARVESTER) {
@@ -800,7 +800,7 @@ func findClosestProteinAndOrgan(nonHarvestedProteins []Entity, organs []Entity) 
 	return closestProtein, closestOrgan
 }
 
-func findClosestNeighborToProtein(protein Entity, organs []Entity) (Coord, Entity) {
+func findClosestNeighborToProtein(protein Entity, organs []Entity, enemyTentaclesTargets [][]bool) (Coord, Entity) {
 	var closestNeighbor Coord
 	var closestOrgan Entity
 	minDistance := 1000
@@ -808,7 +808,7 @@ func findClosestNeighborToProtein(protein Entity, organs []Entity) (Coord, Entit
 	for _, organ := range organs {
 		for _, offset := range offsets {
 			neighbor := organ.coord.add(offset)
-			if neighbor.isValid() && state.isWalkable(neighbor) {
+			if neighbor.isValid() && state.isWalkable(neighbor) && !enemyTentaclesTargets[neighbor.y][neighbor.x] {
 				dist := distance(neighbor, protein.coord)
 				if dist < minDistance {
 					minDistance = dist
