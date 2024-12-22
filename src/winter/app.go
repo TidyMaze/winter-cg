@@ -639,12 +639,11 @@ func sendActions() {
 					minDistanceFromNeighbor := 1000
 
 					for _, organ := range state.Entities {
-						if (organ._type == BASIC || organ._type == ROOT) && organ.owner == ME {
+						if organ.owner == ME {
 							for _, offset := range offsets {
 								coord := organ.coord.add(offset)
 								if coord.isValid() {
-									// never grow on a protein
-									if state.Grid[coord.y][coord.x] == -1 {
+									if state.Grid[coord.y][coord.x] == -1 || state.Entities[state.Grid[coord.y][coord.x]]._type.isProtein() {
 										dist := distance(coord, closestProtein.coord)
 										if dist < minDistanceFromNeighbor {
 											minDistanceFromNeighbor = dist
