@@ -424,6 +424,8 @@ func parseTurnState() {
 	fmt.Scan(&requiredActionsCount)
 
 	debug("Required actions count: %d\n", requiredActionsCount)
+
+	state.RequiredActionsCount = requiredActionsCount
 }
 
 func sendActions() {
