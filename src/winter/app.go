@@ -266,6 +266,10 @@ type State struct {
 	RequiredActionsCount int
 }
 
+func (s State) isWalkable(coord Coord) bool {
+	return state.Grid[coord.y][coord.x] == -1 || state.Entities[state.Grid[coord.y][coord.x]]._type.isProtein()
+}
+
 var state State
 
 func parseDir(dir string) Dir {
@@ -643,7 +647,7 @@ func sendActions() {
 							for _, offset := range offsets {
 								coord := organ.coord.add(offset)
 								if coord.isValid() {
-									if state.Grid[coord.y][coord.x] == -1 || state.Entities[state.Grid[coord.y][coord.x]]._type.isProtein() {
+									if state.isWalkable(coord) {
 										dist := distance(coord, closestProtein.coord)
 										if dist < minDistanceFromNeighbor {
 											minDistanceFromNeighbor = dist
