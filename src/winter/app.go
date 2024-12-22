@@ -677,7 +677,11 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity) {
 			}
 		}
 
-		fmt.Printf("GROW %d %d %d %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showOrganType(growType))
+		if growType == -1 {
+			fmt.Println("WAIT")
+		} else {
+			fmt.Printf("GROW %d %d %d %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showOrganType(growType))
+		}
 	}
 }
 
