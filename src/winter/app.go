@@ -808,7 +808,9 @@ func findClosestNeighborToProtein(protein Entity, organs []Entity, enemyTentacle
 	for _, organ := range organs {
 		for _, offset := range offsets {
 			neighbor := organ.coord.add(offset)
-			if neighbor.isValid() && state.isWalkable(neighbor) && !enemyTentaclesTargets[neighbor.y][neighbor.x] {
+			if neighbor.isValid() &&
+				state.isWalkable(neighbor) &&
+				!enemyTentaclesTargets[neighbor.y][neighbor.x] {
 				dist := distance(neighbor, protein.coord)
 				if dist < minDistance {
 					minDistance = dist
