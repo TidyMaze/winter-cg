@@ -414,26 +414,69 @@ func main() {
 			}
 
 			if minDistance == 1000 {
-				// there is no protein on the grid, find a cell that is the closest from a free cell and grow a basic organ
-				var closestFreeCell Coord
-				minDistance = 1000
+				// there is no protein on the grid, find a cell that is at the frontier of players' organisms
+
+				var enemyOrgans []Entity
+				for _, entity := range entities {
+					if entity.owner == OPPONENT && entity._type == BASIC {
+						enemyOrgans = append(enemyOrgans, entity)
+					}
+				}
+
+				debug("Enemy organs: %+v\n", enemyOrgans)
+
+				var bestCell Coord
+				var bestOfMyOrgans Entity
+				var bestOfEnemyOrgans Entity
+				bestScore := -1000
+
 				for i := 0; i < height; i++ {
 					for j := 0; j < width; j++ {
 						if grid[i][j] == -1 {
+							cell := Coord{j, i}
+
+							// find the closest of my organs
+							minDistance = 1000
+							closestOfMyOrgans := Entity{}
+
 							for _, organ := range organs {
-								dist := distance(Coord{j, i}, organ.coord)
+								dist := distance(cell, organ.coord)
 								if dist < minDistance {
 									minDistance = dist
-									closestFreeCell = Coord{j, i}
+									closestOfMyOrgans = organ
+								}
+							}
+
+							// find the closest of enemy organs
+							minDistance = 1000
+							closestOfEnemyOrgans := Entity{}
+
+							for _, organ := range enemyOrgans {
+								dist := distance(cell, organ.coord)
+								if dist < minDistance {
+									minDistance = dist
+									closestOfEnemyOrgans = organ
+								}
+							}
+
+							diffDist := distance(closestOfMyOrgans.coord, cell) - distance(closestOfEnemyOrgans.coord, cell)
+
+							// only keep if the cell is closest to one of my organs than to any of the enemy organs (score < 0) but with a score that is the closest to 0 (frontier)
+							if diffDist <= 0 {
+								if diffDist > bestScore {
+									bestScore = diffDist
+									bestCell = cell
+									bestOfMyOrgans = closestOfMyOrgans
+									bestOfEnemyOrgans = closestOfEnemyOrgans
 								}
 							}
 						}
 					}
 				}
 
-				debug("Closest free cell: %+v\n", closestFreeCell)
+				debug("Grow target cell: %+v from organ: %+v and enemy organ: %+v\n", bestCell, bestOfMyOrgans, bestOfEnemyOrgans)
 
-				fmt.Printf("GROW %d %d %d BASIC\n", root.organId, closestFreeCell.x, closestFreeCell.y)
+				fmt.Printf("GROW %d %d %d BASIC\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y)
 			} else {
 				debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
 
