@@ -565,7 +565,9 @@ func sendActions() {
 
 		debug("Closest enemy organ: %+v\n", closestEnemyOrganCoord)
 
-		if closestEnemyOrganCoord != (Coord{-1, -1}) && canGrow(state.MyProteins, TENTACLE) {
+		if closestEnemyOrganCoord != (Coord{-1, -1}) &&
+			distance(root.coord, closestEnemyOrganCoord) <= 3 &&
+			canGrow(state.MyProteins, TENTACLE) {
 			debug("Found closest enemy organ: %+v\n", closestEnemyOrganCoord)
 
 			closestEnemyOrgan := state.Entities[state.Grid[closestEnemyOrganCoord.y][closestEnemyOrganCoord.x]]
