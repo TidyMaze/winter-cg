@@ -581,7 +581,7 @@ func sendActions() {
 		fastAttacked := false
 
 		if closestEnemyOrganCoord != (Coord{-1, -1}) &&
-			distance(root.coord, closestEnemyOrganCoord) <= 5 &&
+			distance(root.coord, closestEnemyOrganCoord) <= 6 &&
 			canGrow(state.MyProteins, TENTACLE) {
 			debug("Found closest enemy organ: %+v\n", closestEnemyOrganCoord)
 
