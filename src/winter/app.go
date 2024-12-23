@@ -579,6 +579,16 @@ func sendActions() {
 }
 
 func findShortestPathProt(organs []Entity, nonHarvestedProteins []Entity, enemyTentaclesTargets [][]bool) []Coord {
+	nonHarvestedProteinsMap := make([][]bool, state.Height)
+
+	for i := 0; i < state.Height; i++ {
+		nonHarvestedProteinsMap[i] = make([]bool, state.Width)
+	}
+
+	for _, protein := range nonHarvestedProteins {
+		nonHarvestedProteinsMap[protein.coord.y][protein.coord.x] = true
+	}
+
 	from := make([]Coord, 0)
 	for _, organ := range organs {
 		from = append(from, organ.coord)
@@ -607,6 +617,15 @@ func findShortestPathProt(organs []Entity, nonHarvestedProteins []Entity, enemyT
 	for i := 0; i < state.Height; i++ {
 		for j := 0; j < state.Width; j++ {
 			if !state.isWalkable(Coord{j, i}) {
+				blockedCoords[i][j] = true
+			}
+		}
+	}
+
+	// block the cells that are already harvested
+	for i := 0; i < state.Height; i++ {
+		for j := 0; j < state.Width; j++ {
+			if state.Grid[i][j] != -1 && state.Entities[state.Grid[i][j]]._type.isProtein() && !(nonHarvestedProteinsMap[i][j]) {
 				blockedCoords[i][j] = true
 			}
 		}
@@ -1016,6 +1035,7 @@ func findClosestNeighborToProtein(protein Entity, organs []Entity, enemyTentacle
 			neighbor := organ.coord.add(offset)
 			if neighbor.isValid() &&
 				state.isWalkable(neighbor) &&
+				(state.Grid[neighbor.y][neighbor.x] == -1 || !state.Entities[state.Grid[neighbor.y][neighbor.x]]._type.isProtein()) &&
 				!enemyTentaclesTargets[neighbor.y][neighbor.x] {
 				dist := distance(neighbor, protein.coord)
 				if dist < minDistance {
