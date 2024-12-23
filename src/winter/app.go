@@ -247,6 +247,10 @@ func findDirRelativeTo(from, to Coord) Dir {
 }
 
 func findApproximateDir(from, to Coord) Dir {
+	if from.x == to.x && from.y == to.y {
+		panic(fmt.Sprintf("Same coord %+v", from))
+	}
+
 	if from.x == to.x {
 		if from.y < to.y {
 			return S
@@ -746,7 +750,7 @@ func growToFrontier(organs []Entity) {
 
 	growType := findGrowType()
 
-	growDir := findDirRelativeTo(bestOfMyOrgans.coord, bestCell)
+	growDir := findApproximateDir(bestOfMyOrgans.coord, bestCell)
 
 	debug("Grow target cell: %+v from organ: %+v and enemy organ: %+v\n", bestCell, bestOfMyOrgans, bestOfEnemyOrgans)
 
