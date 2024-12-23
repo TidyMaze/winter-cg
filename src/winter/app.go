@@ -561,7 +561,30 @@ func findShortestPathProt(organs []Entity, nonHarvestedProteins []Entity, enemyT
 		to = append(to, protein.coord)
 	}
 
-	return findShortestPath(from, to, enemyTentaclesTargets)
+	blockedCoords := make([][]bool, state.Height)
+	for i := 0; i < state.Height; i++ {
+		blockedCoords[i] = make([]bool, state.Width)
+	}
+
+	// block the cells that are targeted by the enemy tentacles
+	for i := 0; i < state.Height; i++ {
+		for j := 0; j < state.Width; j++ {
+			if enemyTentaclesTargets[i][j] {
+				blockedCoords[i][j] = true
+			}
+		}
+	}
+
+	// block the cells that are not walkable
+	for i := 0; i < state.Height; i++ {
+		for j := 0; j < state.Width; j++ {
+			if !state.isWalkable(Coord{j, i}) {
+				blockedCoords[i][j] = true
+			}
+		}
+	}
+
+	return findShortestPath(from, to, blockedCoords)
 }
 
 func findEnemyTentaclesTargets() [][]bool {
