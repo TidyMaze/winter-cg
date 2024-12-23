@@ -562,7 +562,6 @@ func sendActions() {
 				for _, attack := range attacks {
 					debug("Attack: %+v\n", attack)
 				}
-				panic("Multiple tentacle attacks")
 			}
 
 			selectedAttack := attacks[0]
