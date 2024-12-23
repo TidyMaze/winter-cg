@@ -591,18 +591,23 @@ func sendActions() {
 			}
 
 			// find the closest organ to the enemy organ
-			closestOfMyOrgansCoord := findClosestOrganTo(organCoords, closestEnemyOrganCoord)
+			closestOfMyOrgansCoord := findClosestOrganTo(organCoords, closestEnemyOrganCoord, enemyTentaclesTargets)
 
 			debug("Closest of my organs to enemy organ: %+v\n", closestOfMyOrgansCoord)
 
-			closestOfMyOrgans := state.Entities[state.Grid[closestOfMyOrgansCoord.y][closestOfMyOrgansCoord.x]]
+			if closestOfMyOrgansCoord == (Coord{-1, -1}) {
+				// no organ to grow from
+				fmt.Println("WAIT no organ fast ATK")
+			} else {
+				closestOfMyOrgans := state.Entities[state.Grid[closestOfMyOrgansCoord.y][closestOfMyOrgansCoord.x]]
 
-			// grow a tentacle towards the enemy organ
-			growDir := findApproximateDir(closestOfMyOrgans.coord, closestEnemyOrganCoord)
+				// grow a tentacle towards the enemy organ
+				growDir := findApproximateDir(closestOfMyOrgans.coord, closestEnemyOrganCoord)
 
-			debug("Grow tentacle towards enemy organ: %+v, from organ: %+v, dir: %s\n", closestEnemyOrgan, closestOfMyOrgans, growDir)
+				debug("Grow tentacle towards enemy organ: %+v, from organ: %+v, dir: %s\n", closestEnemyOrgan, closestOfMyOrgans, growDir)
 
-			fmt.Printf("GROW %d %d %d TENTACLE %s FAST ATK\n", closestOfMyOrgans.organId, closestEnemyOrganCoord.x, closestEnemyOrganCoord.y, showDir(growDir))
+				fmt.Printf("GROW %d %d %d TENTACLE %s FAST ATK\n", closestOfMyOrgans.organId, closestEnemyOrganCoord.x, closestEnemyOrganCoord.y, showDir(growDir))
+			}
 		} else {
 			if len(nonHarvestedProteins) > 0 {
 
@@ -625,7 +630,7 @@ func sendActions() {
 	}
 }
 
-func findClosestOrganTo(to []Coord, from Coord) Coord {
+func findClosestOrganTo(to []Coord, from Coord, tentacleTargets [][]bool) Coord {
 	// use BFS to find the closest organ from the root to the target
 
 	debug("Finding closest organ to target: %+v\n", to)
@@ -664,9 +669,11 @@ func findClosestOrganTo(to []Coord, from Coord) Coord {
 		for _, offset := range offsets {
 			neighbor := current.add(offset)
 			if neighbor.isValid() &&
-				!visited[neighbor.y][neighbor.x] && (state.Grid[neighbor.y][neighbor.x] == -1 ||
-				state.Entities[state.Grid[neighbor.y][neighbor.x]]._type.isProtein() ||
-				state.Entities[state.Grid[neighbor.y][neighbor.x]].owner != NONE) {
+				!visited[neighbor.y][neighbor.x] &&
+				!tentacleTargets[neighbor.y][neighbor.x] &&
+				(state.Grid[neighbor.y][neighbor.x] == -1 ||
+					state.Entities[state.Grid[neighbor.y][neighbor.x]]._type.isProtein() ||
+					state.Entities[state.Grid[neighbor.y][neighbor.x]].owner != NONE) {
 				visited[neighbor.y][neighbor.x] = true
 				queue = append(queue, neighbor)
 			}
