@@ -556,26 +556,124 @@ func sendActions() {
 			fmt.Printf("GROW %d %d %d TENTACLE %s\n", selectedAttack.organ.organId, selectedAttack.growCoord.x, selectedAttack.growCoord.y, selectedAttack.dir)
 
 			continue
+		} else {
+			debug("No tentacle attacks\n")
 		}
 
-		if len(nonHarvestedProteins) > 0 {
+		// find the closest enemy organ from my root to attack
+		closestEnemyOrganCoord := findClosestEnemyOrgan(root)
 
-			// build a map of the intersting spore cells (cells that are at distance max 1 from a non harvested protein)
-			sporeCells := buildSporeCellsMap(nonHarvestedProteins)
+		if closestEnemyOrganCoord != (Coord{-1, -1}) && canGrow(state.MyProteins, TENTACLE) {
+			debug("Closest enemy organ: %+v\n", closestEnemyOrganCoord)
 
-			spored := sporeIfPossible(sporeCells)
+			closestEnemyOrgan := state.Entities[state.Grid[closestEnemyOrganCoord.y][closestEnemyOrganCoord.x]]
 
-			if !spored {
-				grewSporer := growSporerIfPossible(sporeCells, organs)
-
-				if !grewSporer {
-					growTowardsProtein(nonHarvestedProteins, organs, enemyTentaclesTargets, shortestPath)
-				}
+			organCoords := make([]Coord, 0)
+			for _, organ := range organs {
+				organCoords = append(organCoords, organ.coord)
 			}
+
+			// find the closest organ to the enemy organ
+			closestOfMyOrgansCoord := findClosestOrganTo(organCoords, closestEnemyOrganCoord)
+
+			closestOfMyOrgans := state.Entities[state.Grid[closestOfMyOrgansCoord.y][closestOfMyOrgansCoord.x]]
+
+			// grow a tentacle towards the enemy organ
+			growDir := findApproximateDir(closestOfMyOrgans.coord, closestEnemyOrganCoord)
+
+			debug("Grow tentacle towards enemy organ: %+v, from organ: %+v, dir: %s\n", closestEnemyOrgan, closestOfMyOrgans, growDir)
+
+			fmt.Printf("GROW %d %d %d TENTACLE %s FAST ATK\n", closestOfMyOrgans.organId, closestEnemyOrganCoord.x, closestEnemyOrganCoord.y, showDir(growDir))
 		} else {
-			growToFrontier(organs, enemyTentaclesTargets)
+			if len(nonHarvestedProteins) > 0 {
+
+				// build a map of the interesting spore cells (cells that are at distance max 1 from a non harvested protein)
+				sporeCells := buildSporeCellsMap(nonHarvestedProteins)
+
+				spored := sporeIfPossible(sporeCells)
+
+				if !spored {
+					grewSporer := growSporerIfPossible(sporeCells, organs)
+
+					if !grewSporer {
+						growTowardsProtein(nonHarvestedProteins, organs, enemyTentaclesTargets, shortestPath)
+					}
+				}
+			} else {
+				growToFrontier(organs, enemyTentaclesTargets)
+			}
 		}
 	}
+}
+
+func findClosestOrganTo(from []Coord, to Coord) Coord {
+	// use BFS to find the closest organ from the root to the target
+
+	visited := make([][]bool, state.Height)
+	for i := 0; i < state.Height; i++ {
+		visited[i] = make([]bool, state.Width)
+	}
+
+	queue := make([]Coord, 0)
+	for _, coord := range from {
+		queue = append(queue, coord)
+		visited[coord.y][coord.x] = true
+	}
+
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+
+		if current == to {
+			// found the target
+			entity := state.Entities[state.Grid[current.y][current.x]]
+			return entity.coord
+		}
+
+		for _, offset := range offsets {
+			neighbor := current.add(offset)
+			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && state.isWalkable(neighbor) {
+				visited[neighbor.y][neighbor.x] = true
+				queue = append(queue, neighbor)
+			}
+		}
+	}
+
+	return Coord{-1, -1}
+}
+
+func findClosestEnemyOrgan(root Entity) Coord {
+	// use BFS to find the closest enemy organ from the root
+	visited := make([][]bool, state.Height)
+	for i := 0; i < state.Height; i++ {
+		visited[i] = make([]bool, state.Width)
+	}
+
+	queue := make([]Coord, 0)
+	queue = append(queue, root.coord)
+	visited[root.coord.y][root.coord.x] = true
+
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+
+		if state.Grid[current.y][current.x] != -1 {
+			entity := state.Entities[state.Grid[current.y][current.x]]
+			if entity.owner == OPPONENT {
+				return current
+			}
+		}
+
+		for _, offset := range offsets {
+			neighbor := current.add(offset)
+			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && state.isWalkable(neighbor) {
+				visited[neighbor.y][neighbor.x] = true
+				queue = append(queue, neighbor)
+			}
+		}
+	}
+
+	return Coord{-1, -1}
 }
 
 func findShortestPathProt(organs []Entity, nonHarvestedProteins []Entity, enemyTentaclesTargets [][]bool) []Coord {
