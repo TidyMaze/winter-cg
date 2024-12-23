@@ -578,6 +578,8 @@ func sendActions() {
 
 		debug("Closest enemy organ: %+v\n", closestEnemyOrganCoord)
 
+		fastAttacked := false
+
 		if closestEnemyOrganCoord != (Coord{-1, -1}) &&
 			distance(root.coord, closestEnemyOrganCoord) <= 3 &&
 			canGrow(state.MyProteins, TENTACLE) {
@@ -597,7 +599,7 @@ func sendActions() {
 
 			if closestOfMyOrgansCoord == (Coord{-1, -1}) {
 				// no organ to grow from
-				fmt.Println("WAIT no organ fast ATK")
+				debug("Cannot fast attack because no organ to grow from\n")
 			} else {
 				closestOfMyOrgans := state.Entities[state.Grid[closestOfMyOrgansCoord.y][closestOfMyOrgansCoord.x]]
 
@@ -606,9 +608,13 @@ func sendActions() {
 
 				debug("Grow tentacle towards enemy organ: %+v, from organ: %+v, dir: %s\n", closestEnemyOrgan, closestOfMyOrgans, growDir)
 
+				fastAttacked = true
+
 				fmt.Printf("GROW %d %d %d TENTACLE %s FAST ATK\n", closestOfMyOrgans.organId, closestEnemyOrganCoord.x, closestEnemyOrganCoord.y, showDir(growDir))
 			}
-		} else {
+		}
+
+		if !fastAttacked {
 			if len(nonHarvestedProteins) > 0 {
 
 				// build a map of the interesting spore cells (cells that are at distance max 1 from a non harvested protein)
