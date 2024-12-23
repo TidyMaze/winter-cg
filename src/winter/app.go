@@ -758,9 +758,9 @@ func growToFrontier(organs []Entity) {
 		growDir := findApproximateDir(bestOfMyOrgans.coord, bestCell)
 
 		if growType == -1 {
-			fmt.Println("WAIT cannot grow")
+			fmt.Println("WAIT cannot grow frontier")
 		} else {
-			fmt.Printf("GROW %d %d %d %s %s no_prot\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y, showOrganType(growType), showDir(growDir))
+			fmt.Printf("GROW %d %d %d %s %s frontier\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y, showOrganType(growType), showDir(growDir))
 		}
 	}
 }
