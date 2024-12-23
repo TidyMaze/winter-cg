@@ -758,6 +758,11 @@ func findNonHarvestedProteins() []Entity {
 }
 
 func findGrowType() EntityType {
+	// grow a tentacle if I have enough proteins, better for attack and defense
+	if state.MyProteins[1] >= 50 && state.MyProteins[2] >= 50 {
+		return TENTACLE
+	}
+
 	growType := EntityType(-1)
 
 	for _, _type := range []EntityType{BASIC, HARVESTER, TENTACLE, SPORER} {
@@ -767,6 +772,17 @@ func findGrowType() EntityType {
 	}
 
 	return growType
+}
+
+/*
+N to M pathfinding. Where N are my organs and M are the non=harvested proteins.
+Finds the shortest path from any of my organs to any of the non-harvested proteins.
+It must avoid the enemy tentacles.
+Cannot go through existing organs.
+*/
+func findShortestPath(from, to []Coord, forbiddenCells [][]bool) []Coord {
+	// the chosen algoirithm is BFS
+	return nil
 }
 
 func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTentaclesTargets [][]bool) {
