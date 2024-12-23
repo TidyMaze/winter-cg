@@ -680,9 +680,9 @@ func growToFrontier(organs []Entity) {
 	debug("Grow target cell: %+v from organ: %+v and enemy organ: %+v\n", bestCell, bestOfMyOrgans, bestOfEnemyOrgans)
 
 	if growType == -1 {
-		fmt.Println("WAIT")
+		fmt.Println("WAIT damn (front)")
 	} else {
-		fmt.Printf("GROW %d %d %d %s\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y, showOrganType(growType))
+		fmt.Printf("GROW %d %d %d %s no_prot\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y, showOrganType(growType))
 	}
 }
 
@@ -781,7 +781,70 @@ It must avoid the enemy tentacles.
 Cannot go through existing organs.
 */
 func findShortestPath(from, to []Coord, forbiddenCells [][]bool) []Coord {
-	// the chosen algoirithm is BFS
+	// the chosen algorithm is BFS
+
+	toMap := make([][]bool, state.Height)
+	for i := 0; i < state.Height; i++ {
+		toMap[i] = make([]bool, state.Width)
+	}
+
+	for _, coord := range to {
+		toMap[coord.y][coord.x] = true
+	}
+
+	previous := make([][]Coord, state.Height)
+	for i := 0; i < state.Height; i++ {
+		previous[i] = make([]Coord, state.Width)
+		for j := 0; j < state.Width; j++ {
+			previous[i][j] = Coord{-1, -1}
+		}
+	}
+
+	visited := make([][]bool, state.Height)
+	for i := 0; i < state.Height; i++ {
+		visited[i] = make([]bool, state.Width)
+	}
+
+	queue := make([]Coord, 0)
+
+	for _, coord := range from {
+		queue = append(queue, coord)
+		visited[coord.y][coord.x] = true
+	}
+
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+
+		if toMap[current.y][current.x] {
+			// found the target
+			path := make([]Coord, 0)
+
+			for current != (Coord{-1, -1}) {
+				path = append(path, current)
+				current = previous[current.y][current.x]
+			}
+
+			// reverse the path
+			for i := 0; i < len(path)/2; i++ {
+				path[i], path[len(path)-1-i] = path[len(path)-1-i], path[i]
+			}
+
+			return path
+		}
+
+		for _, offset := range offsets {
+			neighbor := current.add(offset)
+			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && !forbiddenCells[neighbor.y][neighbor.x] {
+				visited[neighbor.y][neighbor.x] = true
+				previous[neighbor.y][neighbor.x] = current
+				queue = append(queue, neighbor)
+			}
+		}
+	}
+
+	debug("No path found\n")
+
 	return nil
 }
 
@@ -796,14 +859,14 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTen
 
 	if distance(closestNeighbor, closestProtein.coord) == 1 && canGrow(state.MyProteins, HARVESTER) {
 		harvesterDir := findDirRelativeTo(closestNeighbor, closestProtein.coord)
-		fmt.Printf("GROW %d %d %d HARVESTER %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
+		fmt.Printf("GROW %d %d %d HARVESTER %s harv_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
 	} else {
 		growType := findGrowType()
 
 		if growType == -1 {
-			fmt.Println("WAIT")
+			fmt.Println("WAIT damn")
 		} else {
-			fmt.Printf("GROW %d %d %d %s\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showOrganType(growType))
+			fmt.Printf("GROW %d %d %d %s closer_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showOrganType(growType))
 		}
 	}
 }
