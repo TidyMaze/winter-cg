@@ -804,7 +804,7 @@ func findNonHarvestedProteins() []Entity {
 
 func findGrowType() EntityType {
 	// grow a tentacle if I have enough proteins, better for attack and defense
-	if state.MyProteins[1] >= 50 && state.MyProteins[2] >= 50 {
+	if state.MyProteins[1] >= 5 && state.MyProteins[2] >= 5 {
 		return TENTACLE
 	}
 
