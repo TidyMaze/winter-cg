@@ -692,7 +692,7 @@ func growToFrontier(organs []Entity) {
 
 	var enemyOrgans []Entity
 	for _, entity := range state.Entities {
-		if entity.owner == OPPONENT && entity._type == BASIC {
+		if entity.owner == OPPONENT {
 			enemyOrgans = append(enemyOrgans, entity)
 		}
 	}
