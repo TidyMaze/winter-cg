@@ -581,7 +581,7 @@ func sendActions() {
 		fastAttacked := false
 
 		if closestEnemyOrganCoord != (Coord{-1, -1}) &&
-			distance(root.coord, closestEnemyOrganCoord) <= 4 &&
+			distance(root.coord, closestEnemyOrganCoord) <= 5 &&
 			canGrow(state.MyProteins, TENTACLE) {
 			debug("Found closest enemy organ: %+v\n", closestEnemyOrganCoord)
 
@@ -639,8 +639,8 @@ func sendActions() {
 func findClosestOrganTo(to []Coord, from Coord, tentacleTargets [][]bool) Coord {
 	// use BFS to find the closest organ from the root to the target
 
-	debug("Finding closest organ to target: %+v\n", to)
-	debug("From: %+v\n", from)
+	//debug("Finding closest organ to target: %+v\n", to)
+	//debug("From: %+v\n", from)
 
 	visited := make([][]bool, state.Height)
 	for i := 0; i < state.Height; i++ {
@@ -666,9 +666,6 @@ func findClosestOrganTo(to []Coord, from Coord, tentacleTargets [][]bool) Coord 
 
 		if toMap[current.y][current.x] {
 			// found the target
-
-			debug("Found closest organ to target: %+v, from: %+v\n", to, current)
-
 			return current
 		}
 
