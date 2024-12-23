@@ -242,6 +242,26 @@ func findDirRelativeTo(from, to Coord) Dir {
 	panic(fmt.Sprintf("Unknown direction from %+v to %+v", from, to))
 }
 
+func findApproximateDir(from, to Coord) Dir {
+	if from.x == to.x {
+		if from.y < to.y {
+			return S
+		} else {
+			return N
+		}
+	} else if from.y == to.y {
+		if from.x < to.x {
+			return E
+		} else {
+			return W
+		}
+	} else if from.x < to.x {
+		return E
+	} else {
+		return W
+	}
+}
+
 type Owner int
 
 const (
@@ -722,12 +742,14 @@ func growToFrontier(organs []Entity) {
 
 	growType := findGrowType()
 
+	growDir := findDirRelativeTo(bestOfMyOrgans.coord, bestCell)
+
 	debug("Grow target cell: %+v from organ: %+v and enemy organ: %+v\n", bestCell, bestOfMyOrgans, bestOfEnemyOrgans)
 
 	if growType == -1 {
 		fmt.Println("WAIT damn (front)")
 	} else {
-		fmt.Printf("GROW %d %d %d %s no_prot\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y, showOrganType(growType))
+		fmt.Printf("GROW %d %d %d %s %s no_prot\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y, showOrganType(growType), showDir(growDir))
 	}
 }
 
@@ -804,7 +826,7 @@ func findNonHarvestedProteins() []Entity {
 
 func findGrowType() EntityType {
 	// grow a tentacle if I have enough proteins, better for attack and defense
-	if state.MyProteins[1] >= 5 && state.MyProteins[2] >= 5 {
+	if state.MyProteins[1] >= 10 && state.MyProteins[2] >= 10 {
 		return TENTACLE
 	}
 
@@ -914,10 +936,12 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTen
 		} else {
 			growType := findGrowType()
 
+			growDir := findDirRelativeTo(stepCell, shortestPath[2])
+
 			if growType == -1 {
 				fmt.Println("WAIT path_damn")
 			} else {
-				fmt.Printf("GROW %d %d %d %s path_closer_prot\n", fromEntity.organId, stepCell.x, stepCell.y, showOrganType(growType))
+				fmt.Printf("GROW %d %d %d %s %s path_closer_prot\n", fromEntity.organId, stepCell.x, stepCell.y, showOrganType(growType), showDir(growDir))
 			}
 		}
 	} else {
@@ -934,10 +958,12 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTen
 		} else {
 			growType := findGrowType()
 
+			growDir := findApproximateDir(closestNeighbor, closestProtein.coord)
+
 			if growType == -1 {
 				fmt.Println("WAIT damn")
 			} else {
-				fmt.Printf("GROW %d %d %d %s closer_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showOrganType(growType))
+				fmt.Printf("GROW %d %d %d %s %s closer_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showOrganType(growType), showDir(growDir))
 			}
 		}
 	}
