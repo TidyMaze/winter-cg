@@ -610,8 +610,11 @@ func sendActions() {
 	}
 }
 
-func findClosestOrganTo(from []Coord, to Coord) Coord {
+func findClosestOrganTo(to []Coord, from Coord) Coord {
 	// use BFS to find the closest organ from the root to the target
+
+	debug("Finding closest organ to target: %+v\n", to)
+	debug("From: %+v\n", from)
 
 	visited := make([][]bool, state.Height)
 	for i := 0; i < state.Height; i++ {
@@ -619,17 +622,27 @@ func findClosestOrganTo(from []Coord, to Coord) Coord {
 	}
 
 	queue := make([]Coord, 0)
-	for _, coord := range from {
-		queue = append(queue, coord)
-		visited[coord.y][coord.x] = true
+	queue = append(queue, from)
+	visited[from.y][from.x] = true
+
+	toMap := make([][]bool, state.Height)
+	for i := 0; i < state.Height; i++ {
+		toMap[i] = make([]bool, state.Width)
+	}
+
+	for _, coord := range to {
+		toMap[coord.y][coord.x] = true
 	}
 
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
 
-		if current == to {
+		if toMap[current.y][current.x] {
 			// found the target
+
+			debug("Found closest organ to target: %+v, from: %+v\n", to, current)
+
 			return current
 		}
 
