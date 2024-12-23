@@ -509,6 +509,14 @@ func sendActions() {
 
 		organs := findOrgansOfOrganism(root)
 
+		shortestPath := findShortestPathProt(
+			organs,
+			nonHarvestedProteins,
+			enemyTentaclesTargets,
+		)
+
+		debug("Shortest path: %+v\n", shortestPath)
+
 		// identify possible tentacle attacks
 		attacks := findTentacleAttacks(organs, enemyTentaclesTargets)
 
@@ -540,6 +548,20 @@ func sendActions() {
 			growToFrontier(organs)
 		}
 	}
+}
+
+func findShortestPathProt(organs []Entity, nonHarvestedProteins []Entity, enemyTentaclesTargets [][]bool) []Coord {
+	from := make([]Coord, 0)
+	for _, organ := range organs {
+		from = append(from, organ.coord)
+	}
+
+	to := make([]Coord, 0)
+	for _, protein := range nonHarvestedProteins {
+		to = append(to, protein.coord)
+	}
+
+	return findShortestPath(from, to, enemyTentaclesTargets)
 }
 
 func findEnemyTentaclesTargets() [][]bool {
