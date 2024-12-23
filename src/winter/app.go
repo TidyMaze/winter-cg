@@ -573,7 +573,7 @@ func sendActions() {
 				}
 			}
 		} else {
-			growToFrontier(organs)
+			growToFrontier(organs, enemyTentaclesTargets)
 		}
 	}
 }
@@ -687,7 +687,7 @@ func findTentacleAttacks(organs []Entity, enemyTentaclesTargets [][]bool) []Tent
 	return attacks
 }
 
-func growToFrontier(organs []Entity) {
+func growToFrontier(organs []Entity, enemyTentaclesTargets [][]bool) {
 	// there is no protein on the grid, find a cell that is at the frontier of players' organisms
 
 	var enemyOrgans []Entity
@@ -706,7 +706,7 @@ func growToFrontier(organs []Entity) {
 
 	for i := 0; i < state.Height; i++ {
 		for j := 0; j < state.Width; j++ {
-			if state.Grid[i][j] == -1 {
+			if state.Grid[i][j] == -1 && !enemyTentaclesTargets[i][j] {
 				cell := Coord{j, i}
 
 				// find the closest of my organs
