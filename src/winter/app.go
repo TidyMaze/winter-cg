@@ -563,8 +563,10 @@ func sendActions() {
 		// find the closest enemy organ from my root to attack
 		closestEnemyOrganCoord := findClosestEnemyOrgan(root)
 
+		debug("Closest enemy organ: %+v\n", closestEnemyOrganCoord)
+
 		if closestEnemyOrganCoord != (Coord{-1, -1}) && canGrow(state.MyProteins, TENTACLE) {
-			debug("Closest enemy organ: %+v\n", closestEnemyOrganCoord)
+			debug("Found closest enemy organ: %+v\n", closestEnemyOrganCoord)
 
 			closestEnemyOrgan := state.Entities[state.Grid[closestEnemyOrganCoord.y][closestEnemyOrganCoord.x]]
 
@@ -575,6 +577,8 @@ func sendActions() {
 
 			// find the closest organ to the enemy organ
 			closestOfMyOrgansCoord := findClosestOrganTo(organCoords, closestEnemyOrganCoord)
+
+			debug("Closest of my organs to enemy organ: %+v\n", closestOfMyOrgansCoord)
 
 			closestOfMyOrgans := state.Entities[state.Grid[closestOfMyOrgansCoord.y][closestOfMyOrgansCoord.x]]
 
@@ -626,13 +630,15 @@ func findClosestOrganTo(from []Coord, to Coord) Coord {
 
 		if current == to {
 			// found the target
-			entity := state.Entities[state.Grid[current.y][current.x]]
-			return entity.coord
+			return current
 		}
 
 		for _, offset := range offsets {
 			neighbor := current.add(offset)
-			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && state.isWalkable(neighbor) {
+			if neighbor.isValid() &&
+				!visited[neighbor.y][neighbor.x] && (state.Grid[neighbor.y][neighbor.x] == -1 ||
+				state.Entities[state.Grid[neighbor.y][neighbor.x]]._type.isProtein() ||
+				state.Entities[state.Grid[neighbor.y][neighbor.x]].owner != NONE) {
 				visited[neighbor.y][neighbor.x] = true
 				queue = append(queue, neighbor)
 			}
@@ -643,6 +649,14 @@ func findClosestOrganTo(from []Coord, to Coord) Coord {
 }
 
 func findClosestEnemyOrgan(root Entity) Coord {
+	debug("Finding closest enemy organ from root: %+v\n", root)
+
+	//for _, entity := range state.Entities {
+	//	if entity.owner == OPPONENT {
+	//		debug("Possible enemy organ: %+v\n", entity)
+	//	}
+	//}
+
 	// use BFS to find the closest enemy organ from the root
 	visited := make([][]bool, state.Height)
 	for i := 0; i < state.Height; i++ {
@@ -660,13 +674,16 @@ func findClosestEnemyOrgan(root Entity) Coord {
 		if state.Grid[current.y][current.x] != -1 {
 			entity := state.Entities[state.Grid[current.y][current.x]]
 			if entity.owner == OPPONENT {
+				debug("Found enemy organ at %+v\n", current)
 				return current
 			}
 		}
 
 		for _, offset := range offsets {
 			neighbor := current.add(offset)
-			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && state.isWalkable(neighbor) {
+			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && (state.Grid[neighbor.y][neighbor.x] == -1 ||
+				state.Entities[state.Grid[neighbor.y][neighbor.x]]._type.isProtein() ||
+				state.Entities[state.Grid[neighbor.y][neighbor.x]].owner != NONE) {
 				visited[neighbor.y][neighbor.x] = true
 				queue = append(queue, neighbor)
 			}
