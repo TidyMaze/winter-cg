@@ -968,20 +968,26 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTen
 
 		// find the closest neighbor of the closest protein that can be reached by the closest organ
 		closestNeighbor, closestOrgan := findClosestNeighborToProtein(closestProtein, organs, enemyTentaclesTargets)
-		debug("Closest neighbor: %+v\n", closestNeighbor)
 
-		if distance(closestNeighbor, closestProtein.coord) == 1 && canGrow(state.MyProteins, HARVESTER) {
-			harvesterDir := findDirRelativeTo(closestNeighbor, closestProtein.coord)
-			fmt.Printf("GROW %d %d %d HARVESTER %s harv_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
+		if closestNeighbor == (Coord{-1, -1}) {
+			debug("No neighbor found for protein: %+v\n", closestProtein)
+			fmt.Println("WAIT no neighbor")
 		} else {
-			growType := findGrowType()
+			debug("Closest neighbor: %+v\n", closestNeighbor)
 
-			growDir := findApproximateDir(closestNeighbor, closestProtein.coord)
-
-			if growType == -1 {
-				fmt.Println("WAIT cannot grow")
+			if distance(closestNeighbor, closestProtein.coord) == 1 && canGrow(state.MyProteins, HARVESTER) {
+				harvesterDir := findDirRelativeTo(closestNeighbor, closestProtein.coord)
+				fmt.Printf("GROW %d %d %d HARVESTER %s harv_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
 			} else {
-				fmt.Printf("GROW %d %d %d %s %s closer_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showOrganType(growType), showDir(growDir))
+				growType := findGrowType()
+
+				growDir := findApproximateDir(closestNeighbor, closestProtein.coord)
+
+				if growType == -1 {
+					fmt.Println("WAIT cannot grow")
+				} else {
+					fmt.Printf("GROW %d %d %d %s %s closer_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showOrganType(growType), showDir(growDir))
+				}
 			}
 		}
 	}
@@ -1007,7 +1013,7 @@ func findClosestProteinAndOrgan(nonHarvestedProteins []Entity, organs []Entity) 
 }
 
 func findClosestNeighborToProtein(protein Entity, organs []Entity, enemyTentaclesTargets [][]bool) (Coord, Entity) {
-	var closestNeighbor Coord
+	var closestNeighbor Coord = Coord{-1, -1}
 	var closestOrgan Entity
 	minDistance := 1000
 
