@@ -541,7 +541,7 @@ func sendActions() {
 				grewSporer := growSporerIfPossible(sporeCells, organs)
 
 				if !grewSporer {
-					growTowardsProtein(nonHarvestedProteins, organs, enemyTentaclesTargets)
+					growTowardsProtein(nonHarvestedProteins, organs, enemyTentaclesTargets, shortestPath)
 				}
 			}
 		} else {
@@ -893,25 +893,52 @@ func findShortestPath(from, to []Coord, forbiddenCells [][]bool) []Coord {
 	return nil
 }
 
-func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTentaclesTargets [][]bool) {
+func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTentaclesTargets [][]bool, shortestPath []Coord) {
 	// find the closest protein and organ
-	closestProtein, closestOrgan := findClosestProteinAndOrgan(nonHarvestedProteins, organs)
-	debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
 
-	// find the closest neighbor of the closest protein that can be reached by the closest organ
-	closestNeighbor, closestOrgan := findClosestNeighborToProtein(closestProtein, organs, enemyTentaclesTargets)
-	debug("Closest neighbor: %+v\n", closestNeighbor)
+	if len(shortestPath) > 1 {
+		// use the shortest path to grow towards the closest protein
+		fromCell := shortestPath[0]
+		fromEntity := state.Entities[state.Grid[fromCell.y][fromCell.x]]
 
-	if distance(closestNeighbor, closestProtein.coord) == 1 && canGrow(state.MyProteins, HARVESTER) {
-		harvesterDir := findDirRelativeTo(closestNeighbor, closestProtein.coord)
-		fmt.Printf("GROW %d %d %d HARVESTER %s harv_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
-	} else {
-		growType := findGrowType()
+		stepCell := shortestPath[1]
 
-		if growType == -1 {
-			fmt.Println("WAIT damn")
+		toCell := shortestPath[len(shortestPath)-1]
+		// toEntity := state.Entities[state.Grid[toCell.y][toCell.x]]
+
+		debug("Path from cell: %+v, to cell: %+v via step cell: %+v\n", fromCell, toCell, stepCell)
+
+		if distance(stepCell, toCell) == 1 && canGrow(state.MyProteins, HARVESTER) {
+			harvesterDir := findDirRelativeTo(stepCell, toCell)
+			fmt.Printf("GROW %d %d %d HARVESTER %s path_harv_prot\n", fromEntity.organId, stepCell.x, stepCell.y, showDir(harvesterDir))
 		} else {
-			fmt.Printf("GROW %d %d %d %s closer_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showOrganType(growType))
+			growType := findGrowType()
+
+			if growType == -1 {
+				fmt.Println("WAIT path_damn")
+			} else {
+				fmt.Printf("GROW %d %d %d %s path_closer_prot\n", fromEntity.organId, stepCell.x, stepCell.y, showOrganType(growType))
+			}
+		}
+	} else {
+		closestProtein, closestOrgan := findClosestProteinAndOrgan(nonHarvestedProteins, organs)
+		debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
+
+		// find the closest neighbor of the closest protein that can be reached by the closest organ
+		closestNeighbor, closestOrgan := findClosestNeighborToProtein(closestProtein, organs, enemyTentaclesTargets)
+		debug("Closest neighbor: %+v\n", closestNeighbor)
+
+		if distance(closestNeighbor, closestProtein.coord) == 1 && canGrow(state.MyProteins, HARVESTER) {
+			harvesterDir := findDirRelativeTo(closestNeighbor, closestProtein.coord)
+			fmt.Printf("GROW %d %d %d HARVESTER %s harv_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
+		} else {
+			growType := findGrowType()
+
+			if growType == -1 {
+				fmt.Println("WAIT damn")
+			} else {
+				fmt.Printf("GROW %d %d %d %s closer_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showOrganType(growType))
+			}
 		}
 	}
 }
