@@ -854,7 +854,7 @@ func growSporerIfPossible(sporeCells [][]bool, organs []Entity) bool {
 						sporeCoord := findSporeCellInDirection(sporerCoord, dir, sporeCells)
 
 						if sporeCoord.isValid() &&
-							distance(sporerCoord, sporeCoord) > 4 {
+							distance(sporerCoord, sporeCoord) > 5 {
 							debug("Organ: %+v can reach spore cell: %+v after sporing in direction: %s from cell: %+v\n", organ, sporeCoord, showDir(dir), sporerCoord)
 							sporerPlans = append(sporerPlans, SporePlan{
 								organ:          organ,
