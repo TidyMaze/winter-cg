@@ -226,6 +226,10 @@ var offsets = []Coord{
 }
 
 func findDirRelativeTo(from, to Coord) Dir {
+	if from.x == to.x && from.y == to.y {
+		panic(fmt.Sprintf("Same coord %+v", from))
+	}
+
 	if from.x == to.x {
 		if from.y < to.y {
 			return S
@@ -936,7 +940,13 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTen
 		} else {
 			growType := findGrowType()
 
-			growDir := findDirRelativeTo(stepCell, shortestPath[2])
+			growDir := N
+
+			if len(shortestPath) >= 3 {
+				growDir = findDirRelativeTo(stepCell, shortestPath[2])
+			} else {
+				growDir = findDirRelativeTo(fromCell, stepCell)
+			}
 
 			if growType == -1 {
 				fmt.Println("WAIT path_damn")
