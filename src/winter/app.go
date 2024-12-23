@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sort"
 )
 
 /**
@@ -549,7 +550,20 @@ func sendActions() {
 		attacks := findTentacleAttacks(organs, enemyTentaclesTargets)
 
 		if len(attacks) > 0 {
-			// attack the target
+			// attack the target with the most destroyed organs
+
+			// sort the attacks by the number of destroyed organs
+			sort.Slice(attacks, func(i, j int) bool {
+				return attacks[i].destroyedCount > attacks[j].destroyedCount
+			})
+
+			if len(attacks) > 1 {
+				debug("Some tentacle attacks\n")
+				for _, attack := range attacks {
+					debug("Attack: %+v\n", attack)
+				}
+				panic("Multiple tentacle attacks")
+			}
 
 			selectedAttack := attacks[0]
 
@@ -777,10 +791,11 @@ func findEnemyTentaclesTargets() [][]bool {
 }
 
 type TentacleGrowPlan struct {
-	organ     Entity
-	growCoord Coord
-	dir       Dir
-	attacked  Entity
+	organ          Entity
+	growCoord      Coord
+	dir            Dir
+	attacked       Entity
+	destroyedCount int
 }
 
 func findTentacleAttacks(organs []Entity, enemyTentaclesTargets [][]bool) []TentacleGrowPlan {
@@ -801,11 +816,15 @@ func findTentacleAttacks(organs []Entity, enemyTentaclesTargets [][]bool) []Tent
 					if attackedCoord.isValid() && state.Grid[attackedCoord.y][attackedCoord.x] != -1 {
 						attacked := state.Entities[state.Grid[attackedCoord.y][attackedCoord.x]]
 						if attacked.owner == OPPONENT {
+
+							destroyedCount := findDestroyedCount(attacked)
+
 							attacks = append(attacks, TentacleGrowPlan{
-								organ:     organ,
-								growCoord: coord,
-								dir:       dir,
-								attacked:  attacked,
+								organ:          organ,
+								growCoord:      coord,
+								dir:            dir,
+								attacked:       attacked,
+								destroyedCount: destroyedCount,
 							})
 						}
 					}
@@ -815,6 +834,40 @@ func findTentacleAttacks(organs []Entity, enemyTentaclesTargets [][]bool) []Tent
 	}
 
 	return attacks
+}
+
+func findDestroyedCount(attacked Entity) int {
+	// find the number of enemy organs that will be destroyed if the attacked organ is destroyed
+	// use BFS to find all the children of the attacked organ
+
+	visited := make([][]bool, state.Height)
+	for i := 0; i < state.Height; i++ {
+		visited[i] = make([]bool, state.Width)
+	}
+
+	queue := make([]Entity, 0)
+	queue = append(queue, attacked)
+	visited[attacked.coord.y][attacked.coord.x] = true
+	destroyedCount := 1
+
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+
+		for _, offset := range offsets {
+			neighbor := current.coord.add(offset)
+			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && state.Grid[neighbor.y][neighbor.x] != -1 {
+				entity := state.Entities[state.Grid[neighbor.y][neighbor.x]]
+				if entity.organParentId == current.organId {
+					visited[neighbor.y][neighbor.x] = true
+					queue = append(queue, entity)
+					destroyedCount++
+				}
+			}
+		}
+	}
+
+	return destroyedCount
 }
 
 func growToFrontier(organs []Entity, enemyTentaclesTargets [][]bool) {
