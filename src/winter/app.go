@@ -699,7 +699,7 @@ func growToFrontier(organs []Entity) {
 
 	// debug("Enemy organs: %+v\n", enemyOrgans)
 
-	var bestCell Coord
+	var bestCell Coord = Coord{-1, -1}
 	var bestOfMyOrgans Entity
 	var bestOfEnemyOrgans Entity
 	bestScore := -1000
@@ -748,16 +748,20 @@ func growToFrontier(organs []Entity) {
 		}
 	}
 
-	growType := findGrowType()
-
-	growDir := findApproximateDir(bestOfMyOrgans.coord, bestCell)
-
-	debug("Grow target cell: %+v from organ: %+v and enemy organ: %+v\n", bestCell, bestOfMyOrgans, bestOfEnemyOrgans)
-
-	if growType == -1 {
-		fmt.Println("WAIT damn (front)")
+	if bestCell == (Coord{-1, -1}) {
+		fmt.Println("WAIT no cell")
 	} else {
-		fmt.Printf("GROW %d %d %d %s %s no_prot\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y, showOrganType(growType), showDir(growDir))
+		growType := findGrowType()
+
+		debug("Grow target cell: %+v from organ: %+v and enemy organ: %+v\n", bestCell, bestOfMyOrgans, bestOfEnemyOrgans)
+
+		growDir := findApproximateDir(bestOfMyOrgans.coord, bestCell)
+
+		if growType == -1 {
+			fmt.Println("WAIT damn (front)")
+		} else {
+			fmt.Printf("GROW %d %d %d %s %s no_prot\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y, showOrganType(growType), showDir(growDir))
+		}
 	}
 }
 
