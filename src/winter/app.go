@@ -580,17 +580,17 @@ func findEnemyTentaclesTargets() [][]bool {
 		}
 	}
 
-	debug("Tentacle targets:\n")
-	for i := 0; i < state.Height; i++ {
-		for j := 0; j < state.Width; j++ {
-			if tentacleTargets[i][j] {
-				fmt.Fprintf(os.Stderr, "X ")
-			} else {
-				fmt.Fprintf(os.Stderr, "  ")
-			}
-		}
-		fmt.Fprintf(os.Stderr, "\n")
-	}
+	// debug("Tentacle targets:\n")
+	// for i := 0; i < state.Height; i++ {
+	// 	for j := 0; j < state.Width; j++ {
+	// 		if tentacleTargets[i][j] {
+	// 			fmt.Fprintf(os.Stderr, "X ")
+	// 		} else {
+	// 			fmt.Fprintf(os.Stderr, ". ")
+	// 		}
+	// 	}
+	// 	fmt.Fprintf(os.Stderr, "\n")
+	// }
 
 	return tentacleTargets
 }
@@ -723,17 +723,17 @@ func buildSporeCellsMap(nonHarvestedProteins []Entity) [][]bool {
 		}
 	}
 
-	debug("Spore cells:\n")
-	for i := 0; i < state.Height; i++ {
-		for j := 0; j < state.Width; j++ {
-			if sporeCells[i][j] {
-				fmt.Fprintf(os.Stderr, "X ")
-			} else {
-				fmt.Fprintf(os.Stderr, "  ")
-			}
-		}
-		fmt.Fprintf(os.Stderr, "\n")
-	}
+	// debug("Spore cells:\n")
+	// for i := 0; i < state.Height; i++ {
+	// 	for j := 0; j < state.Width; j++ {
+	// 		if sporeCells[i][j] {
+	// 			fmt.Fprintf(os.Stderr, "X ")
+	// 		} else {
+	// 			fmt.Fprintf(os.Stderr, ". ")
+	// 		}
+	// 	}
+	// 	fmt.Fprintf(os.Stderr, "\n")
+	// }
 
 	return sporeCells
 }
