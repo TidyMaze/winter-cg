@@ -758,7 +758,7 @@ func growToFrontier(organs []Entity) {
 		growDir := findApproximateDir(bestOfMyOrgans.coord, bestCell)
 
 		if growType == -1 {
-			fmt.Println("WAIT damn (front)")
+			fmt.Println("WAIT cannot grow")
 		} else {
 			fmt.Printf("GROW %d %d %d %s %s no_prot\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y, showOrganType(growType), showDir(growDir))
 		}
@@ -957,7 +957,7 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTen
 			}
 
 			if growType == -1 {
-				fmt.Println("WAIT path_damn")
+				fmt.Println("WAIT cannot grow path")
 			} else {
 				fmt.Printf("GROW %d %d %d %s %s path_closer_prot\n", fromEntity.organId, stepCell.x, stepCell.y, showOrganType(growType), showDir(growDir))
 			}
@@ -979,7 +979,7 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTen
 			growDir := findApproximateDir(closestNeighbor, closestProtein.coord)
 
 			if growType == -1 {
-				fmt.Println("WAIT damn")
+				fmt.Println("WAIT cannot grow")
 			} else {
 				fmt.Printf("GROW %d %d %d %s %s closer_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showOrganType(growType), showDir(growDir))
 			}
