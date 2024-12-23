@@ -1065,12 +1065,3 @@ func canGrow(proteinCounts []int, _type EntityType) bool {
 		panic(fmt.Sprintf("Unknown type %d", _type))
 	}
 }
-
-func isAlreadyHarvested(entity Entity, nonHarvestedProteins []Entity) bool {
-	for _, protein := range nonHarvestedProteins {
-		if protein.coord.x == entity.coord.x && protein.coord.y == entity.coord.y {
-			return false
-		}
-	}
-	return true
-}
