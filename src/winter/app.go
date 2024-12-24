@@ -616,23 +616,23 @@ func sendActions() {
     => [[1,a,x],[1,a,y],[1,a,z],[1,b,x],[1,b,y],[1,b,z],[1,c,x],[1,c,y],[1,c,z],[2,a,x],[2,a,y],[2,a,z],[2,b,x],[2,b,y],[2,b,z],[2,c,x],[2,c,y],[2,c,z],[3,a,x],[3,a,y],[3,a,z],[3,b,x],[3,b,y],[3,b,z],[3,c,x],[3,c,y],[3,c,z]]
     )
 */
-func allCombinationsOfSlices(slices [][]Action) [][]Action {
+func allCombinationsOfSlices[T any](slices [][]T) [][]T {
 	if len(slices) == 0 {
-		return [][]Action{{}}
+		return [][]T{{}}
 	}
 
 	if len(slices) == 1 {
-		return [][]Action{slices[0]}
+		return [][]T{slices[0]}
 	}
 
-	perms := make([][]Action, 0)
+	perms := make([][]T, 0)
 
 	for _, action := range slices[0] {
-		remaining := make([][]Action, 0)
+		remaining := make([][]T, 0)
 		remaining = append(remaining, slices[1:]...)
 
-		for _, perm := range allCombinationsOfSlices(remaining) {
-			perms = append(perms, append([]Action{action}, perm...))
+		for _, perm := range allCombinationsOfSlices[T](remaining) {
+			perms = append(perms, append([]T{action}, perm...))
 		}
 	}
 
@@ -645,6 +645,8 @@ type PlayerActions struct {
 }
 
 func findBestActions(roots []Entity) PlayerActions {
+	debug("test combinations %+v\n", allCombinationsOfSlices([][]int{{1, 2}, {3, 4}}))
+
 	allActionsCombinations := make([]PlayerActions, 0)
 
 	debug("Permuting roots %+v\n", roots)
