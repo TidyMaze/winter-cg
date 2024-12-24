@@ -622,17 +622,17 @@ func allCombinationsOfSlices[T any](slices [][]T) [][]T {
 	}
 
 	if len(slices) == 1 {
-		return [][]T{slices[0]}
+		perms := make([][]T, 0)
+		for _, item := range slices[0] {
+			perms = append(perms, []T{item})
+		}
+		return perms
 	}
 
 	perms := make([][]T, 0)
-
-	for _, action := range slices[0] {
-		remaining := make([][]T, 0)
-		remaining = append(remaining, slices[1:]...)
-
-		for _, perm := range allCombinationsOfSlices[T](remaining) {
-			perms = append(perms, append([]T{action}, perm...))
+	for _, item := range slices[0] {
+		for _, perm := range allCombinationsOfSlices[T](slices[1:]) {
+			perms = append(perms, append([]T{item}, perm...))
 		}
 	}
 
