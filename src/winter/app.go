@@ -685,12 +685,13 @@ func findBestActions(roots []Entity) PlayerActions {
 
 		combinations := allCombinationsOfSlices(actionsPerRootSorted)
 
-		debug("Combinations: %+v\n", combinations)
+		debug("Combinations (%d)\n", len(combinations))
 
 		// calculate the score of state after applying all the actions
 		playerActions := make([]PlayerActions, 0)
 
 		for _, actions := range combinations {
+			debug("Actions (%d): %+v\n", len(actions), actions)
 			playerActions = append(playerActions, PlayerActions{
 				actions: actions,
 				score:   scoreActions(state, actions),
@@ -736,7 +737,7 @@ func findActionsForOrganism(root Entity, organs []Entity) []Action {
 		debug("Actions for organ %+v: %d\n", organ.organId, len(actions))
 	}
 
-	//actions = append(actions, WaitAction{root.organId, ""})
+	actions = append(actions, WaitAction{root.organId, ""})
 
 	return actions
 }
@@ -751,10 +752,6 @@ func findActionsForOrgan(root, organ Entity) []Action {
 	// find the spore actions
 	sporeActions := findSporeActions(root, organ)
 	actions = append(actions, sporeActions...)
-
-	// find the wait actions
-	waitActions := findWaitActions(root, organ)
-	actions = append(actions, waitActions...)
 
 	return actions
 }
