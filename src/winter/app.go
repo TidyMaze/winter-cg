@@ -677,10 +677,10 @@ func findBestActions(roots []Entity) PlayerActions {
 
 		debug("Actions per root sorted (%d):\n", len(actionsPerRootSorted))
 		for iRoot, actions := range actionsPerRootSorted {
-			debug("Root %d\n", iRoot)
-			for iAction, action := range actions {
-				debug("Action %d: %+v\n", iAction, action)
-			}
+			debug("Root %d: %d actions\n", iRoot, len(actions))
+			//for iAction, action := range actions {
+			//	debug("Action %d: %+v\n", iAction, action)
+			//}
 		}
 
 		combinations := allCombinationsOfSlices(actionsPerRootSorted)
@@ -731,9 +731,12 @@ func findActionsForOrganism(root Entity, organs []Entity) []Action {
 
 	for _, organ := range organs {
 		// find all possible actions for the organ
-		actions = append(actions, findActionsForOrgan(root, organ)...)
+		actionsForOrgan := findActionsForOrgan(root, organ)
+		actions = append(actions, actionsForOrgan...)
 		debug("Actions for organ %+v: %d\n", organ.organId, len(actions))
 	}
+
+	//actions = append(actions, WaitAction{root.organId, ""})
 
 	return actions
 }
