@@ -777,15 +777,28 @@ func findGrowActions(root, organ Entity) []Action {
 		coord := organ.coord.add(offset)
 		if coord.isValid() && state.isWalkable(coord) {
 			for _, _type := range []EntityType{BASIC, HARVESTER, TENTACLE, SPORER} {
-				for _, dir := range []Dir{N, S, W, E} {
+
+				if _type == BASIC {
+					// for basic, direction doesn't matter
 					actions = append(actions, GrowAction{
 						rootOrganId: root.organId,
 						organId:     organ.organId,
 						coord:       coord,
 						_type:       _type,
-						dir:         dir,
+						dir:         N,
 						message:     "",
 					})
+				} else {
+					for _, dir := range []Dir{N, S, W, E} {
+						actions = append(actions, GrowAction{
+							rootOrganId: root.organId,
+							organId:     organ.organId,
+							coord:       coord,
+							_type:       _type,
+							dir:         dir,
+							message:     "",
+						})
+					}
 				}
 			}
 		}
