@@ -512,6 +512,69 @@ func findOrgansOfOrganism(root Entity) []Entity {
 	return organs
 }
 
+type Action interface {
+	getRootOrganId() int
+	getMessage() string
+	getStringCommand() string
+}
+
+type GrowAction struct {
+	rootOrganId int
+	organId     int
+	coord       Coord
+	_type       EntityType
+	dir         Dir
+	message     string
+}
+
+func (a GrowAction) getRootOrganId() int {
+	return a.rootOrganId
+}
+
+func (a GrowAction) getMessage() string {
+	return a.message
+}
+
+func (a GrowAction) getStringCommand() string {
+	return fmt.Sprintf("GROW %d %d %d %s %s %s", a.organId, a.coord.x, a.coord.y, showOrganType(a._type), showDir(a.dir), a.message)
+}
+
+type WaitAction struct {
+	rootOrganId int
+	message     string
+}
+
+func (a WaitAction) getRootOrganId() int {
+	return a.rootOrganId
+}
+
+func (a WaitAction) getMessage() string {
+	return a.message
+}
+
+func (a WaitAction) getStringCommand() string {
+	return fmt.Sprintf("WAIT %s", a.message)
+}
+
+type SporeAction struct {
+	rootOrganId int
+	sporerId    int
+	coord       Coord
+	message     string
+}
+
+func (a SporeAction) getRootOrganId() int {
+	return a.rootOrganId
+}
+
+func (a SporeAction) getMessage() string {
+	return a.message
+}
+
+func (a SporeAction) getStringCommand() string {
+	return fmt.Sprintf("SPORE %d %d %d %s", a.sporerId, a.coord.x, a.coord.y, a.message)
+}
+
 func sendActions() {
 	// find all roots
 	var roots []Entity
@@ -525,10 +588,12 @@ func sendActions() {
 		panic(fmt.Sprintf("Expected %d roots, found %d", state.RequiredActionsCount, len(roots)))
 	}
 
-	enemyTentaclesTargets := findEnemyTentaclesTargets()
+	//enemyTentaclesTargets := findEnemyTentaclesTargets()
 
 	// find the non-harvested proteins
-	nonHarvestedProteins := findNonHarvestedProteins()
+	//nonHarvestedProteins := findNonHarvestedProteins()
+
+	actions := findBestActions(roots).actions
 
 	for i := 0; i < state.RequiredActionsCount; i++ {
 		// get the first root
@@ -536,104 +601,219 @@ func sendActions() {
 
 		debug("=== Root: %+v ===\n", root)
 
-		organs := findOrgansOfOrganism(root)
-
-		shortestPath := findShortestPathProt(
-			organs,
-			nonHarvestedProteins,
-			enemyTentaclesTargets,
-		)
-
-		debug("Shortest path: %+v\n", shortestPath)
-
-		// identify possible tentacle attacks
-		attacks := findTentacleAttacks(organs, enemyTentaclesTargets)
-
-		if len(attacks) > 0 {
-			// attack the target with the most destroyed organs
-
-			// sort the attacks by the number of destroyed organs
-			sort.Slice(attacks, func(i, j int) bool {
-				return attacks[i].destroyedCount > attacks[j].destroyedCount
-			})
-
-			if len(attacks) > 1 {
-				debug("Some tentacle attacks\n")
-				for _, attack := range attacks {
-					debug("Attack: %+v\n", attack)
-				}
-			}
-
-			selectedAttack := attacks[0]
-
-			fmt.Printf("GROW %d %d %d TENTACLE %s\n", selectedAttack.organ.organId, selectedAttack.growCoord.x, selectedAttack.growCoord.y, selectedAttack.dir)
-
-			continue
-		} else {
-			debug("No tentacle attacks\n")
-		}
-
-		// find the closest enemy organ from my root to attack
-		closestEnemyOrganCoord := findClosestEnemyOrgan(root)
-
-		debug("Closest enemy organ: %+v\n", closestEnemyOrganCoord)
-
-		fastAttacked := false
-
-		if closestEnemyOrganCoord != (Coord{-1, -1}) &&
-			distance(root.coord, closestEnemyOrganCoord) <= 7 &&
-			canGrow(state.MyProteins, TENTACLE) {
-			debug("Found closest enemy organ: %+v\n", closestEnemyOrganCoord)
-
-			closestEnemyOrgan := state.Entities[state.Grid[closestEnemyOrganCoord.y][closestEnemyOrganCoord.x]]
-
-			organCoords := make([]Coord, 0)
-			for _, organ := range organs {
-				organCoords = append(organCoords, organ.coord)
-			}
-
-			// find the closest organ to the enemy organ
-			closestOfMyOrgansCoord := findClosestOrganTo(organCoords, closestEnemyOrganCoord, enemyTentaclesTargets)
-
-			debug("Closest of my organs to enemy organ: %+v\n", closestOfMyOrgansCoord)
-
-			if closestOfMyOrgansCoord == (Coord{-1, -1}) {
-				// no organ to grow from
-				debug("Cannot fast attack because no organ to grow from\n")
-			} else {
-				closestOfMyOrgans := state.Entities[state.Grid[closestOfMyOrgansCoord.y][closestOfMyOrgansCoord.x]]
-
-				// grow a tentacle towards the enemy organ
-				growDir := findApproximateDir(closestOfMyOrgans.coord, closestEnemyOrganCoord)
-
-				debug("Grow tentacle towards enemy organ: %+v, from organ: %+v, dir: %s\n", closestEnemyOrgan, closestOfMyOrgans, growDir)
-
-				fastAttacked = true
-
-				fmt.Printf("GROW %d %d %d TENTACLE %s FAST ATK\n", closestOfMyOrgans.organId, closestEnemyOrganCoord.x, closestEnemyOrganCoord.y, showDir(growDir))
-			}
-		}
-
-		if !fastAttacked {
-			if len(nonHarvestedProteins) > 0 {
-
-				// build a map of the interesting spore cells (cells that are at distance max 1 from a non harvested protein)
-				sporeCells := buildSporeCellsMap(nonHarvestedProteins)
-
-				spored := sporeIfPossible(sporeCells)
-
-				if !spored {
-					grewSporer := growSporerIfPossible(sporeCells, organs)
-
-					if !grewSporer {
-						growTowardsProtein(nonHarvestedProteins, organs, enemyTentaclesTargets, shortestPath)
-					}
-				}
-			} else {
-				growToFrontier(organs, enemyTentaclesTargets)
+		for _, a := range actions {
+			if a.getRootOrganId() == root.organId {
+				fmt.Println(a.getStringCommand())
+				break
 			}
 		}
 	}
+}
+
+/*
+*
+  - Get all combinations of slices (ex: [[1,2,3],[a,b,c],[x,y,z]]
+    => [[1,a,x],[1,a,y],[1,a,z],[1,b,x],[1,b,y],[1,b,z],[1,c,x],[1,c,y],[1,c,z],[2,a,x],[2,a,y],[2,a,z],[2,b,x],[2,b,y],[2,b,z],[2,c,x],[2,c,y],[2,c,z],[3,a,x],[3,a,y],[3,a,z],[3,b,x],[3,b,y],[3,b,z],[3,c,x],[3,c,y],[3,c,z]]
+    )
+*/
+func allCombinationsOfSlices(slices [][]Action) [][]Action {
+	if len(slices) == 0 {
+		return [][]Action{{}}
+	}
+
+	if len(slices) == 1 {
+		return [][]Action{slices[0]}
+	}
+
+	perms := make([][]Action, 0)
+
+	for _, action := range slices[0] {
+		remaining := make([][]Action, 0)
+		remaining = append(remaining, slices[1:]...)
+
+		for _, perm := range allCombinationsOfSlices(remaining) {
+			perms = append(perms, append([]Action{action}, perm...))
+		}
+	}
+
+	return perms
+}
+
+type PlayerActions struct {
+	actions []Action
+	score   float64
+}
+
+func findBestActions(roots []Entity) PlayerActions {
+	allActionsCombinations := make([]PlayerActions, 0)
+
+	debug("Permuting roots %+v\n", roots)
+
+	// find all permutations of the N roots (ex: [[1,2,3], [1,3,2], [2,1,3], [2,3,1], [3,1,2], [3,2,1]])
+	rootPermutations := permute(roots)
+
+	debug("Root permutations (%d):\n", len(rootPermutations))
+
+	// for each root, find all possible actions for each organ
+
+	actionsPerRoot := make(map[int][]Action)
+
+	for _, root := range roots {
+		// find all organs of the root
+		organs := findOrgansOfOrganism(root)
+
+		// find all possible actions for each organ
+		actionsPerRoot[root.organId] = findActionsForOrganism(root, organs)
+	}
+
+	for iPerm, rootPermutation := range rootPermutations {
+		debug("Root permutation #%d: %+v\n", iPerm, rootPermutation)
+
+		// once we know the order of roots, we can combine all the actions of each root
+		actionsPerRootSorted := make([][]Action, 0)
+		for _, root := range rootPermutation {
+			actionsPerRootSorted = append(actionsPerRootSorted, actionsPerRoot[root.organId])
+		}
+
+		debug("Actions per root sorted (%d):\n", len(actionsPerRootSorted))
+		for iRoot, actions := range actionsPerRootSorted {
+			debug("Root %d\n", iRoot)
+			for iAction, action := range actions {
+				debug("Action %d: %+v\n", iAction, action)
+			}
+		}
+
+		combinations := allCombinationsOfSlices(actionsPerRootSorted)
+
+		debug("Combinations: %+v\n", combinations)
+
+		// calculate the score of state after applying all the actions
+		playerActions := make([]PlayerActions, 0)
+
+		for _, actions := range combinations {
+			playerActions = append(playerActions, PlayerActions{
+				actions: actions,
+				score:   scoreActions(state, actions),
+			})
+		}
+
+		allActionsCombinations = append(allActionsCombinations, playerActions...)
+	}
+
+	debug("All actions\n")
+	for i, actions := range allActionsCombinations {
+		debug("Combination %d\n", i)
+		for _, action := range actions.actions {
+			debug("%+v\n", action)
+		}
+	}
+
+	// find the best combination of actions
+	// sorted by score
+
+	sort.Slice(allActionsCombinations, func(i, j int) bool {
+		return allActionsCombinations[i].score > allActionsCombinations[j].score
+	})
+
+	if len(allActionsCombinations) == 0 {
+		panic("No actions found")
+	}
+
+	return allActionsCombinations[0]
+}
+
+func scoreActions(s State, actions []Action) float64 {
+	return 0
+}
+
+func findActionsForOrganism(root Entity, organs []Entity) []Action {
+	actions := make([]Action, 0)
+
+	for _, organ := range organs {
+		// find all possible actions for the organ
+		actions = append(actions, findActionsForOrgan(root, organ)...)
+		debug("Actions for organ %+v: %d\n", organ.organId, len(actions))
+	}
+
+	return actions
+}
+
+func findActionsForOrgan(root, organ Entity) []Action {
+	actions := make([]Action, 0)
+
+	// find the grow actions
+	growActions := findGrowActions(root, organ)
+	actions = append(actions, growActions...)
+
+	// find the spore actions
+	sporeActions := findSporeActions(root, organ)
+	actions = append(actions, sporeActions...)
+
+	// find the wait actions
+	waitActions := findWaitActions(root, organ)
+	actions = append(actions, waitActions...)
+
+	return actions
+}
+
+func findSporeActions(root Entity, organ Entity) []Action {
+	return make([]Action, 0)
+}
+
+func findWaitActions(root Entity, organ Entity) []Action {
+	return []Action{WaitAction{
+		rootOrganId: root.organId,
+		message:     "",
+	}}
+}
+
+func findGrowActions(root, organ Entity) []Action {
+	actions := make([]Action, 0)
+
+	// find all the possible grow actions for the organ
+	for _, offset := range offsets {
+		coord := organ.coord.add(offset)
+		if coord.isValid() && state.isWalkable(coord) {
+			for _, _type := range []EntityType{BASIC, HARVESTER, TENTACLE, SPORER} {
+				for _, dir := range []Dir{N, S, W, E} {
+					actions = append(actions, GrowAction{
+						rootOrganId: root.organId,
+						organId:     organ.organId,
+						coord:       coord,
+						_type:       _type,
+						dir:         dir,
+						message:     "",
+					})
+				}
+			}
+		}
+	}
+
+	return actions
+}
+
+func permute[T any](items []T) [][]T {
+	if len(items) == 0 {
+		return [][]T{{}}
+	}
+
+	if len(items) == 1 {
+		return [][]T{items}
+	}
+
+	perms := make([][]T, 0)
+
+	for i, item := range items {
+		remaining := make([]T, 0)
+		remaining = append(remaining, items[:i]...)
+		remaining = append(remaining, items[i+1:]...)
+
+		for _, perm := range permute[T](remaining) {
+			perms = append(perms, append([]T{item}, perm...))
+		}
+	}
+
+	return perms
 }
 
 func findClosestOrganTo(to []Coord, from Coord, tentacleTargets [][]bool) Coord {
