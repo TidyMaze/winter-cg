@@ -690,8 +690,8 @@ func findBestActions(roots []Entity) PlayerActions {
 		// calculate the score of state after applying all the actions
 		playerActions := make([]PlayerActions, 0)
 
-		for _, actions := range combinations {
-			debug("Actions (%d): %+v\n", len(actions), actions)
+		for iComb, actions := range combinations {
+			debug("Actions for comb %d (%d): %+v\n", iComb, len(actions), actions)
 			playerActions = append(playerActions, PlayerActions{
 				actions: actions,
 				score:   scoreActions(state, actions),
