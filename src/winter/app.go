@@ -910,6 +910,18 @@ func applyActions(s State, actions []Action) State {
 				panic(fmt.Sprintf("Already grew organ at %+v", a.coord))
 			}
 
+			// kill neighbors of tentacles
+			if a._type == TENTACLE {
+				neighborCoord := a.coord.add(offsets[a.dir])
+				if neighborCoord.isValid() {
+					neighborEntity := newState.Grid[neighborCoord.y][neighborCoord.x]
+					if neighborEntity != nil && neighborEntity.owner == OPPONENT {
+						newState.Grid[neighborCoord.y][neighborCoord.x] = nil
+						newState.Entities = removeEntity(newState.Entities, neighborEntity)
+					}
+				}
+			}
+
 			// apply the grow cost to my proteins
 			growCost := growCost(a._type)
 			newState.MyProteins[growCost.costA]--
