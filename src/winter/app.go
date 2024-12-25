@@ -675,12 +675,12 @@ func sendActions() {
 		panic(fmt.Sprintf("Expected %d roots, found %d", state.RequiredActionsCount, len(roots)))
 	}
 
-	//enemyTentaclesTargets := findEnemyTentaclesTargets()
+	enemyTentaclesTargets := findEnemyTentaclesTargets()
 
 	// find the non-harvested proteins
 	//nonHarvestedProteins := findNonHarvestedProteins()
 
-	actions := findBestActions(roots).actions
+	actions := findBestActions(roots, enemyTentaclesTargets).actions
 
 	for i := 0; i < state.RequiredActionsCount; i++ {
 		// get the first root
@@ -731,7 +731,7 @@ type PlayerActions struct {
 	score   float64
 }
 
-func findBestActions(roots []Entity) PlayerActions {
+func findBestActions(roots []Entity, enemyTentaclesTargets [][]bool) PlayerActions {
 	debug("test combinations %+v\n", allCombinationsOfSlices([][]int{{1, 2}, {3, 4}}))
 
 	allActionsCombinations := make([]PlayerActions, 0)
@@ -752,7 +752,7 @@ func findBestActions(roots []Entity) PlayerActions {
 		organs := findOrgansOfOrganism(root)
 
 		// find all possible actions for each organ
-		actionsPerRoot[root.organId] = findActionsForOrganism(root, organs)
+		actionsPerRoot[root.organId] = findActionsForOrganism(root, organs, enemyTentaclesTargets)
 	}
 
 	for iPerm, rootPermutation := range rootPermutations {
@@ -991,12 +991,12 @@ func copyState(s State) State {
 	return newState
 }
 
-func findActionsForOrganism(root Entity, organs []Entity) []Action {
+func findActionsForOrganism(root Entity, organs []Entity, enemyTentaclesTargets [][]bool) []Action {
 	actions := make([]Action, 0)
 
 	for _, organ := range organs {
 		// find all possible actions for the organ
-		actionsForOrgan := findActionsForOrgan(root, organ)
+		actionsForOrgan := findActionsForOrgan(root, organ, enemyTentaclesTargets)
 		actions = append(actions, actionsForOrgan...)
 		//debug("Actions for organ %+v: %d\n", organ.organId, len(actions))
 	}
@@ -1006,21 +1006,21 @@ func findActionsForOrganism(root Entity, organs []Entity) []Action {
 	return actions
 }
 
-func findActionsForOrgan(root, organ Entity) []Action {
+func findActionsForOrgan(root, organ Entity, enemyTentaclesTargets [][]bool) []Action {
 	actions := make([]Action, 0)
 
 	// find the grow actions
-	growActions := findGrowActions(root, organ)
+	growActions := findGrowActions(root, organ, enemyTentaclesTargets)
 	actions = append(actions, growActions...)
 
 	// find the spore actions
-	sporeActions := findSporeActions(root, organ)
+	sporeActions := findSporeActions(root, organ, enemyTentaclesTargets)
 	actions = append(actions, sporeActions...)
 
 	return actions
 }
 
-func findSporeActions(root Entity, organ Entity) []Action {
+func findSporeActions(root Entity, organ Entity, enemyTentaclesTargets [][]bool) []Action {
 	return make([]Action, 0)
 }
 
@@ -1031,13 +1031,13 @@ func findWaitActions(root Entity, organ Entity) []Action {
 	}}
 }
 
-func findGrowActions(root, organ Entity) []Action {
+func findGrowActions(root, organ Entity, enemyTentaclesTargets [][]bool) []Action {
 	actions := make([]Action, 0)
 
 	// find all the possible grow actions for the organ
 	for _, offset := range offsets {
 		coord := organ.coord.add(offset)
-		if coord.isValid() && state.isWalkable(coord) {
+		if coord.isValid() && state.isWalkable(coord) && !enemyTentaclesTargets[coord.y][coord.x] {
 			for _, _type := range []EntityType{BASIC, HARVESTER, TENTACLE, SPORER} {
 
 				if _type == BASIC && canGrow(state.MyProteins, BASIC) {
