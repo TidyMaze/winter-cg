@@ -998,7 +998,7 @@ func findActionsForOrganism(root Entity, organs []Entity) []Action {
 		// find all possible actions for the organ
 		actionsForOrgan := findActionsForOrgan(root, organ)
 		actions = append(actions, actionsForOrgan...)
-		debug("Actions for organ %+v: %d\n", organ.organId, len(actions))
+		//debug("Actions for organ %+v: %d\n", organ.organId, len(actions))
 	}
 
 	actions = append(actions, WaitAction{root.organId, ""})
