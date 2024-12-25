@@ -832,7 +832,7 @@ func scoreActions(s State, actions []Action) float64 {
 
 func scoreState(s State) float64 {
 	// score is the number of harvested proteins plus the number of organs
-	harvested, nonHarvested := findHarvestedProteins()
+	harvested, nonHarvested := findHarvestedProteins(s)
 
 	organs := findOrgans(s)
 
@@ -1410,19 +1410,19 @@ func buildSporeCellsMap(nonHarvestedProteins []Entity) [][]bool {
 	return sporeCells
 }
 
-func findHarvestedProteins() ([]Entity, []Entity) {
+func findHarvestedProteins(s State) ([]Entity, []Entity) {
 	var nonHarvestedProteins []Entity
 	var harvestedProteins []Entity
 
-	for _, entity := range state.Entities {
+	for _, entity := range s.Entities {
 		if entity._type.isProtein() {
 			// find my neighbor harvesters of this protein (must be facing the protein)
 			myHarvesters := make([]Entity, 0)
 			for _, offset := range offsets {
 				coord := entity.coord.add(offset)
 				if coord.isValid() {
-					if state.Grid[coord.y][coord.x] != nil {
-						neighbor := state.Grid[coord.y][coord.x]
+					if s.Grid[coord.y][coord.x] != nil {
+						neighbor := s.Grid[coord.y][coord.x]
 						if neighbor._type == HARVESTER && neighbor.owner == ME {
 							if findDirRelativeTo(neighbor.coord, entity.coord) == neighbor.organDir {
 								myHarvesters = append(myHarvesters, *neighbor)
@@ -1442,16 +1442,16 @@ func findHarvestedProteins() ([]Entity, []Entity) {
 		}
 	}
 
-	nonHarvestedProteinsCoords := make([]Coord, 0)
-	harvestedProteinsCoords := make([]Coord, 0)
-
-	for _, protein := range nonHarvestedProteins {
-		nonHarvestedProteinsCoords = append(nonHarvestedProteinsCoords, protein.coord)
-	}
-
-	for _, protein := range harvestedProteins {
-		harvestedProteinsCoords = append(harvestedProteinsCoords, protein.coord)
-	}
+	//nonHarvestedProteinsCoords := make([]Coord, 0)
+	//harvestedProteinsCoords := make([]Coord, 0)
+	//
+	//for _, protein := range nonHarvestedProteins {
+	//	nonHarvestedProteinsCoords = append(nonHarvestedProteinsCoords, protein.coord)
+	//}
+	//
+	//for _, protein := range harvestedProteins {
+	//	harvestedProteinsCoords = append(harvestedProteinsCoords, protein.coord)
+	//}
 
 	//debug("%d Non-harvested proteins, %d Harvested proteins\n", len(nonHarvestedProteins), len(harvestedProteins))
 
