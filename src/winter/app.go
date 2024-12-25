@@ -920,6 +920,10 @@ func applyActions(s State, actions []Action) State {
 						// get all children of the killed entity
 						destroyedChildren := findDestroyed(newState, *neighborEntity)
 
+						if len(destroyedChildren) == 0 {
+							panic(fmt.Sprintf("No destroyed children by playing action %+v: %+v", a, destroyedChildren))
+						}
+
 						for _, destroyedChild := range destroyedChildren {
 							newState.Grid[destroyedChild.coord.y][destroyedChild.coord.x] = nil
 							newState.Entities = removeEntity(newState.Entities, destroyedChild)
