@@ -457,14 +457,6 @@ func parseTurnState() {
 			}
 		}
 
-		if entity.organId != i {
-			if entity._type != WALL && entity._type != PROTEIN_A && entity._type != PROTEIN_B && entity._type != PROTEIN_C && entity._type != PROTEIN_D {
-				debug("Entity %d: %+v not ok (got %d)\n", i, entity, entity.organId)
-			}
-		} else {
-			debug("Entity %d: %+v ok\n", i, entity)
-		}
-
 		state.Entities[i] = entity
 
 		state.Grid[y][x] = i
@@ -1369,13 +1361,11 @@ func findHarvestedProteins() ([]Entity, []Entity) {
 		nonHarvestedProteinsCoords = append(nonHarvestedProteinsCoords, protein.coord)
 	}
 
-	debug("Non-harvested proteins: %+v\n", nonHarvestedProteinsCoords)
-
 	for _, protein := range harvestedProteins {
 		harvestedProteinsCoords = append(harvestedProteinsCoords, protein.coord)
 	}
 
-	debug("Harvested proteins: %+v\n", harvestedProteinsCoords)
+	debug("%d Non-harvested proteins, %d Harvested proteins\n", len(nonHarvestedProteins), len(harvestedProteins))
 
 	return harvestedProteins, nonHarvestedProteins
 }
