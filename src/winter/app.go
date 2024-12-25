@@ -204,6 +204,32 @@ func (t EntityType) isProtein() bool {
 	return t == PROTEIN_A || t == PROTEIN_B || t == PROTEIN_C || t == PROTEIN_D
 }
 
+func (t EntityType) String() string {
+	switch t {
+	case WALL:
+		return "WALL"
+	case ROOT:
+		return "ROOT"
+	case BASIC:
+		return "BASIC"
+	case HARVESTER:
+		return "HARVESTER"
+	case TENTACLE:
+		return "TENTACLE"
+	case SPORER:
+		return "SPORER"
+	case PROTEIN_A:
+		return "A"
+	case PROTEIN_B:
+		return "B"
+	case PROTEIN_C:
+		return "C"
+	case PROTEIN_D:
+		return "D"
+	}
+	panic(fmt.Sprintf("Unknown type %d", t))
+}
+
 type Dir int
 
 func (d Dir) String() string {
@@ -287,6 +313,43 @@ type Entity struct {
 	organDir      Dir
 	organParentId int
 	organRootId   int
+}
+
+func showOwner(owner Owner) string {
+	switch owner {
+	case ME:
+		return "ME"
+	case OPPONENT:
+		return "OPPONENT"
+	case NONE:
+		return "NONE"
+	}
+	panic(fmt.Sprintf("Unknown owner %d", owner))
+}
+
+func (e Entity) String() string {
+	switch e._type {
+	case WALL:
+		return fmt.Sprintf("Wall at %+v", e.coord)
+	case ROOT:
+		return fmt.Sprintf("Root at %+v, owner: %s, organId: %d, organParentId: %d, organRootId: %d", e.coord, showOwner(e.owner), e.organId, e.organParentId, e.organRootId)
+	case BASIC:
+		return fmt.Sprintf("Basic at %+v, owner: %s, organId: %d, organParentId: %d, organRootId: %d", e.coord, showOwner(e.owner), e.organId, e.organParentId, e.organRootId)
+	case HARVESTER:
+		return fmt.Sprintf("Harvester at %+v, owner: %s, organId: %d, dir %s, organParentId: %d, organRootId: %d", e.coord, showOwner(e.owner), e.organId, showDir(e.organDir), e.organParentId, e.organRootId)
+	case TENTACLE:
+		return fmt.Sprintf("Tentacle at %+v, owner: %s, organId: %d, dir %s, organParentId: %d, organRootId: %d", e.coord, showOwner(e.owner), e.organId, showDir(e.organDir), e.organParentId, e.organRootId)
+	case SPORER:
+		return fmt.Sprintf("Sporer at %+v, owner: %s, organId: %d, dir %s, organParentId: %d, organRootId: %d", e.coord, showOwner(e.owner), e.organId, showDir(e.organDir), e.organParentId, e.organRootId)
+	case PROTEIN_A:
+		return fmt.Sprintf("Protein A at %+v", e.coord)
+	case PROTEIN_B:
+		return fmt.Sprintf("Protein B at %+v", e.coord)
+	case PROTEIN_C:
+		return fmt.Sprintf("Protein C at %+v", e.coord)
+	case PROTEIN_D:
+		return fmt.Sprintf("Protein D at %+v", e.coord)
+	}
 }
 
 type State struct {
@@ -703,7 +766,7 @@ func findBestActions(roots []Entity) PlayerActions {
 		playerActions := make([]PlayerActions, 0)
 
 		for iComb, actions := range combinations {
-			debug("%d actions for comb (%d), ", iComb, len(actions))
+			debug("%d actions for comb (%d), ", len(actions), iComb)
 			playerActions = append(playerActions, PlayerActions{
 				actions: actions,
 				score:   scoreActions(state, actions),
@@ -1365,7 +1428,7 @@ func findHarvestedProteins() ([]Entity, []Entity) {
 		harvestedProteinsCoords = append(harvestedProteinsCoords, protein.coord)
 	}
 
-	debug("%d Non-harvested proteins, %d Harvested proteins\n", len(nonHarvestedProteins), len(harvestedProteins))
+	//debug("%d Non-harvested proteins, %d Harvested proteins\n", len(nonHarvestedProteins), len(harvestedProteins))
 
 	return harvestedProteins, nonHarvestedProteins
 }
