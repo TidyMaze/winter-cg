@@ -1462,7 +1462,7 @@ func findHarvestedProteins(s State) ([]Entity, []Entity) {
 							if findDirRelativeTo(neighbor.coord, entity.coord) == neighbor.organDir {
 								myHarvesters = append(myHarvesters, *neighbor)
 							} else {
-								debug("Neighbor harvester %+v is not facing the protein %+v\n", neighbor, entity)
+								//debug("Neighbor harvester %+v is not facing the protein %+v\n", neighbor, entity)
 							}
 						}
 					}
