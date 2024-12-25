@@ -358,14 +358,14 @@ type State struct {
 	Height               int
 	Width                int
 	Entities             []Entity
-	Grid                 [][]int
+	Grid                 [][]*Entity
 	MyProteins           []int
 	OppProteins          []int
 	RequiredActionsCount int
 }
 
 func (s State) isWalkable(coord Coord) bool {
-	return state.Grid[coord.y][coord.x] == -1 || state.Entities[state.Grid[coord.y][coord.x]]._type.isProtein()
+	return state.Grid[coord.y][coord.x] == nil || state.Grid[coord.y][coord.x]._type.isProtein()
 }
 
 var state State
@@ -476,11 +476,11 @@ type SporePlan struct {
 }
 
 func parseTurnState() {
-	state.Grid = make([][]int, state.Height)
+	state.Grid = make([][]*Entity, state.Height)
 	for i := 0; i < state.Height; i++ {
-		state.Grid[i] = make([]int, state.Width)
+		state.Grid[i] = make([]*Entity, state.Width)
 		for j := 0; j < state.Width; j++ {
-			state.Grid[i][j] = -1
+			state.Grid[i][j] = nil
 		}
 	}
 
@@ -524,7 +524,7 @@ func parseTurnState() {
 
 		state.Entities[i] = entity
 
-		state.Grid[y][x] = i
+		state.Grid[y][x] = &state.Entities[i]
 	}
 
 	// debug the entities
@@ -881,7 +881,7 @@ func applyActions(s State, actions []Action) State {
 			}
 
 			newState.Entities = append(newState.Entities, newEntity)
-			newState.Grid[a.coord.y][a.coord.x] = newEntity.organId
+			newState.Grid[a.coord.y][a.coord.x] = &newEntity
 
 			//debug("Grew organ %+v\n", newEntity)
 
@@ -920,7 +920,7 @@ func copyState(s State) State {
 		Height:               s.Height,
 		Width:                s.Width,
 		Entities:             make([]Entity, len(s.Entities)),
-		Grid:                 make([][]int, s.Height),
+		Grid:                 make([][]*Entity, s.Height),
 		MyProteins:           make([]int, 4),
 		OppProteins:          make([]int, 4),
 		RequiredActionsCount: s.RequiredActionsCount,
@@ -933,7 +933,7 @@ func copyState(s State) State {
 
 	// copy grid
 	for i := 0; i < s.Height; i++ {
-		newState.Grid[i] = make([]int, s.Width)
+		newState.Grid[i] = make([]*Entity, s.Width)
 		for j := 0; j < s.Width; j++ {
 			newState.Grid[i][j] = s.Grid[i][j]
 		}
@@ -1097,9 +1097,9 @@ func findClosestOrganTo(to []Coord, from Coord, tentacleTargets [][]bool) Coord 
 			if neighbor.isValid() &&
 				!visited[neighbor.y][neighbor.x] &&
 				!tentacleTargets[neighbor.y][neighbor.x] &&
-				(state.Grid[neighbor.y][neighbor.x] == -1 ||
-					state.Entities[state.Grid[neighbor.y][neighbor.x]]._type.isProtein() ||
-					state.Entities[state.Grid[neighbor.y][neighbor.x]].owner != NONE) {
+				(state.Grid[neighbor.y][neighbor.x] == nil ||
+					state.Grid[neighbor.y][neighbor.x]._type.isProtein() ||
+					state.Grid[neighbor.y][neighbor.x].owner != NONE) {
 				visited[neighbor.y][neighbor.x] = true
 				queue = append(queue, neighbor)
 			}
@@ -1132,8 +1132,8 @@ func findClosestEnemyOrgan(root Entity) Coord {
 		current := queue[0]
 		queue = queue[1:]
 
-		if state.Grid[current.y][current.x] != -1 {
-			entity := state.Entities[state.Grid[current.y][current.x]]
+		if state.Grid[current.y][current.x] != nil {
+			entity := state.Grid[current.y][current.x]
 			if entity.owner == OPPONENT {
 				debug("Found enemy organ at %+v\n", current)
 				return current
@@ -1142,9 +1142,9 @@ func findClosestEnemyOrgan(root Entity) Coord {
 
 		for _, offset := range offsets {
 			neighbor := current.add(offset)
-			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && (state.Grid[neighbor.y][neighbor.x] == -1 ||
-				state.Entities[state.Grid[neighbor.y][neighbor.x]]._type.isProtein() ||
-				state.Entities[state.Grid[neighbor.y][neighbor.x]].owner != NONE) {
+			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && (state.Grid[neighbor.y][neighbor.x] == nil ||
+				state.Grid[neighbor.y][neighbor.x]._type.isProtein() ||
+				state.Grid[neighbor.y][neighbor.x].owner != NONE) {
 				visited[neighbor.y][neighbor.x] = true
 				queue = append(queue, neighbor)
 			}
@@ -1245,17 +1245,17 @@ func findTentacleAttacks(organs []Entity, enemyTentaclesTargets [][]bool) []Tent
 				// check if there is an opponent organ in the direction of the offset
 				for _, dir := range []Dir{N, S, W, E} {
 					attackedCoord := coord.add(offsets[dir])
-					if attackedCoord.isValid() && state.Grid[attackedCoord.y][attackedCoord.x] != -1 {
-						attacked := state.Entities[state.Grid[attackedCoord.y][attackedCoord.x]]
+					if attackedCoord.isValid() && state.Grid[attackedCoord.y][attackedCoord.x] != nil {
+						attacked := state.Grid[attackedCoord.y][attackedCoord.x]
 						if attacked.owner == OPPONENT {
 
-							destroyedCount := findDestroyedCount(attacked)
+							destroyedCount := findDestroyedCount(*attacked)
 
 							attacks = append(attacks, TentacleGrowPlan{
 								organ:          organ,
 								growCoord:      coord,
 								dir:            dir,
-								attacked:       attacked,
+								attacked:       *attacked,
 								destroyedCount: destroyedCount,
 							})
 						}
@@ -1288,11 +1288,11 @@ func findDestroyedCount(attacked Entity) int {
 
 		for _, offset := range offsets {
 			neighbor := current.coord.add(offset)
-			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && state.Grid[neighbor.y][neighbor.x] != -1 {
-				entity := state.Entities[state.Grid[neighbor.y][neighbor.x]]
+			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && state.Grid[neighbor.y][neighbor.x] != nil {
+				entity := state.Grid[neighbor.y][neighbor.x]
 				if entity.organParentId == current.organId {
 					visited[neighbor.y][neighbor.x] = true
-					queue = append(queue, entity)
+					queue = append(queue, *entity)
 					destroyedCount++
 				}
 			}
@@ -1321,7 +1321,7 @@ func growToFrontier(organs []Entity, enemyTentaclesTargets [][]bool) {
 
 	for i := 0; i < state.Height; i++ {
 		for j := 0; j < state.Width; j++ {
-			if state.Grid[i][j] == -1 && !enemyTentaclesTargets[i][j] {
+			if state.Grid[i][j] == nil && !enemyTentaclesTargets[i][j] {
 				cell := Coord{j, i}
 
 				// find the closest of my organs
@@ -1389,7 +1389,7 @@ func buildSporeCellsMap(nonHarvestedProteins []Entity) [][]bool {
 	for _, protein := range nonHarvestedProteins {
 		for _, offset := range offsets {
 			coord := protein.coord.add(offset)
-			if coord.isValid() && state.Grid[coord.y][coord.x] == -1 {
+			if coord.isValid() && state.Grid[coord.y][coord.x] == nil {
 				sporeCells[coord.y][coord.x] = true
 			}
 		}
@@ -1421,11 +1421,11 @@ func findHarvestedProteins() ([]Entity, []Entity) {
 			for _, offset := range offsets {
 				coord := entity.coord.add(offset)
 				if coord.isValid() {
-					if state.Grid[coord.y][coord.x] != -1 {
-						neighbor := state.Entities[state.Grid[coord.y][coord.x]]
+					if state.Grid[coord.y][coord.x] != nil {
+						neighbor := state.Grid[coord.y][coord.x]
 						if neighbor._type == HARVESTER && neighbor.owner == ME {
 							if findDirRelativeTo(neighbor.coord, entity.coord) == neighbor.organDir {
-								myHarvesters = append(myHarvesters, neighbor)
+								myHarvesters = append(myHarvesters, *neighbor)
 							} else {
 								debug("Neighbor harvester %+v is not facing the protein %+v\n", neighbor, entity)
 							}
@@ -1555,7 +1555,7 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTen
 	if len(shortestPath) > 1 {
 		// use the shortest path to grow towards the closest protein
 		fromCell := shortestPath[0]
-		fromEntity := state.Entities[state.Grid[fromCell.y][fromCell.x]]
+		fromEntity := state.Grid[fromCell.y][fromCell.x]
 
 		stepCell := shortestPath[1]
 
@@ -1671,7 +1671,7 @@ func growSporerIfPossible(sporeCells [][]bool, organs []Entity) bool {
 		for _, organ := range organs {
 			for _, offset := range offsets {
 				sporerCoord := organ.coord.add(offset)
-				if sporerCoord.isValid() && state.Grid[sporerCoord.y][sporerCoord.x] == -1 {
+				if sporerCoord.isValid() && state.Grid[sporerCoord.y][sporerCoord.x] == nil {
 					// simulate the spore in all directions until it reaches a spore cell
 					for _, dir := range []Dir{N, S, W, E} {
 						sporeCoord := findSporeCellInDirection(sporerCoord, dir, sporeCells)
@@ -1749,8 +1749,8 @@ func findSporeCellInDirection(coord Coord, dir Dir, sporeCells [][]bool) Coord {
 			break
 		}
 
-		if state.Grid[sporeCoord.y][sporeCoord.x] != -1 &&
-			!(state.Entities[state.Grid[sporeCoord.y][sporeCoord.x]]._type.isProtein()) {
+		if state.Grid[sporeCoord.y][sporeCoord.x] != nil &&
+			!(state.Grid[sporeCoord.y][sporeCoord.x]._type.isProtein()) {
 			break
 		}
 
