@@ -614,6 +614,10 @@ func (a GrowAction) getStringCommand() string {
 	return fmt.Sprintf("GROW %d %d %d %s %s %s", a.organId, a.coord.x, a.coord.y, showOrganType(a._type), showDir(a.dir), a.message)
 }
 
+func (a GrowAction) String() string {
+	return fmt.Sprintf("Grow %s at %+v, dir: %s, message: %s", showOrganType(a._type), a.coord, showDir(a.dir), a.message)
+}
+
 type WaitAction struct {
 	rootOrganId int
 	message     string
@@ -629,6 +633,10 @@ func (a WaitAction) getMessage() string {
 
 func (a WaitAction) getStringCommand() string {
 	return fmt.Sprintf("WAIT %s", a.message)
+}
+
+func (a WaitAction) String() string {
+	return fmt.Sprintf("Wait, message: %s", a.message)
 }
 
 type SporeAction struct {
@@ -648,6 +656,10 @@ func (a SporeAction) getMessage() string {
 
 func (a SporeAction) getStringCommand() string {
 	return fmt.Sprintf("SPORE %d %d %d %s", a.sporerId, a.coord.x, a.coord.y, a.message)
+}
+
+func (a SporeAction) String() string {
+	return fmt.Sprintf("Spore at %+v with sporer %d, message: %s", a.coord, a.sporerId, a.message)
 }
 
 func sendActions() {
@@ -767,8 +779,8 @@ func findBestActions(roots []Entity) PlayerActions {
 		// calculate the score of state after applying all the actions
 		playerActions := make([]PlayerActions, 0)
 
-		for iComb, actions := range combinations {
-			debug("%d actions for comb (%d), ", len(actions), iComb)
+		for _, actions := range combinations {
+			//debug("%d actions for comb (%d), ", len(actions), iComb)
 			playerActions = append(playerActions, PlayerActions{
 				actions: actions,
 				score:   scoreActions(state, actions),
@@ -792,6 +804,17 @@ func findBestActions(roots []Entity) PlayerActions {
 	sort.Slice(allActionsCombinations, func(i, j int) bool {
 		return allActionsCombinations[i].score > allActionsCombinations[j].score
 	})
+
+	// print top 10 combinations with score
+	debug("Top 10 combinations\n")
+	for i, actions := range allActionsCombinations {
+		if i < 10 {
+			debug("Combination %d, score: %f\n", i, actions.score)
+			for _, action := range actions.actions {
+				debug("%+v\n", action)
+			}
+		}
+	}
 
 	if len(allActionsCombinations) == 0 {
 		panic("No actions found")
@@ -860,7 +883,7 @@ func applyActions(s State, actions []Action) State {
 			newState.Entities = append(newState.Entities, newEntity)
 			newState.Grid[a.coord.y][a.coord.x] = newEntity.organId
 
-			debug("Grew organ %+v\n", newEntity)
+			//debug("Grew organ %+v\n", newEntity)
 
 			if growCoords[a.coord.y][a.coord.x] {
 				panic(fmt.Sprintf("Already grew organ at %+v", a.coord))
