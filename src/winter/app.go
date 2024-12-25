@@ -758,7 +758,7 @@ func applyActions(s State, actions []Action) State {
 	// copy the state
 	newState := copyState(s)
 
-	growCoords := make([][]bool, 0)
+	growCoords := make([][]bool, state.Height)
 
 	for i := 0; i < state.Height; i++ {
 		growCoords[i] = make([]bool, state.Width)
