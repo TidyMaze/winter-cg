@@ -838,7 +838,7 @@ func scoreState(s State) float64 {
 	myOrgans := findOrgans(s, ME)
 	enemyOrgans := findOrgans(s, OPPONENT)
 
-	return float64(len(harvested)*10 - len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100)
+	return float64(len(harvested)*10 + len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100)
 }
 
 // my organs (any root)
