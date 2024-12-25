@@ -880,6 +880,19 @@ func applyActions(s State, actions []Action) State {
 				organRootId:   a.rootOrganId,
 			}
 
+			oldEntityAtCoord := newState.Grid[a.coord.y][a.coord.x]
+			if oldEntityAtCoord != nil {
+
+				if oldEntityAtCoord.coord != a.coord {
+					panic(fmt.Sprintf("Old entity coord %+v different from new coord %+v", oldEntityAtCoord.coord, a.coord))
+				}
+
+				newState.Grid[a.coord.y][a.coord.x] = nil
+
+				// remove the old entity from the entities list
+				newState.Entities = removeEntity(newState.Entities, oldEntityAtCoord)
+			}
+
 			newState.Entities = append(newState.Entities, newEntity)
 			newState.Grid[a.coord.y][a.coord.x] = &newEntity
 
@@ -905,6 +918,26 @@ func applyActions(s State, actions []Action) State {
 	return newState
 }
 
+func removeEntity(entities []Entity, entity *Entity) []Entity {
+	// find index of the entity
+	index := -1
+
+	for i, e := range entities {
+		if e.coord == entity.coord {
+			index = i
+			break
+		}
+	}
+
+	if index == -1 {
+		panic(fmt.Sprintf("Entity %+v not found in entities", entity))
+	}
+
+	// remove the entity
+	entities[index] = entities[len(entities)-1]
+	return entities[:len(entities)-1]
+}
+
 func maxOrganId(entities []Entity) int {
 	maxId := -1
 	for _, entity := range entities {
@@ -928,6 +961,7 @@ func copyState(s State) State {
 
 	// copy entities
 	for i, entity := range s.Entities {
+		// entity is copied
 		newState.Entities[i] = entity
 	}
 
@@ -935,6 +969,7 @@ func copyState(s State) State {
 	for i := 0; i < s.Height; i++ {
 		newState.Grid[i] = make([]*Entity, s.Width)
 		for j := 0; j < s.Width; j++ {
+			// pointer is copied (same ref)
 			newState.Grid[i][j] = s.Grid[i][j]
 		}
 	}
