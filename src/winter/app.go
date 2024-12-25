@@ -803,10 +803,12 @@ func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) Pl
 		return allActionsCombinations[i].score > allActionsCombinations[j].score
 	})
 
-	// print top 10 combinations with score
-	debug("Top 10 combinations\n")
+	// print top N combinations with score
+
+	topN := 50
+	debug("Top %d combinations\n", topN)
 	for i, actions := range allActionsCombinations {
-		if i < 10 {
+		if i < topN {
 			actionsAsStr := ""
 
 			for _, action := range actions.actions {
