@@ -675,7 +675,7 @@ func sendActions() {
 		panic(fmt.Sprintf("Expected %d roots, found %d", state.RequiredActionsCount, len(roots)))
 	}
 
-	enemyTentaclesTargets := findEnemyTentaclesTargets()
+	enemyTentaclesTargets := findEnemyTentaclesTargets(state)
 
 	// find the non-harvested proteins
 	//nonHarvestedProteins := findNonHarvestedProteins()
@@ -838,7 +838,12 @@ func scoreState(s State) float64 {
 	myOrgans := findOrgans(s, ME)
 	enemyOrgans := findOrgans(s, OPPONENT)
 
-	return float64(len(harvested)*10 + len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100)
+	enemyTentaclesTargets := findEnemyTentaclesTargets(s)
+
+	// find the distance from any of my organs to the closest non-harvested protein (malus for being far)
+	distanceClosestProtein := len(findShortestPathProt(s, myOrgans, nonHarvested, enemyTentaclesTargets))
+
+	return float64(len(harvested)*10 + len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein)
 }
 
 // my organs (any root)
@@ -1217,7 +1222,7 @@ func findClosestEnemyOrgan(root Entity) Coord {
 	return Coord{-1, -1}
 }
 
-func findShortestPathProt(organs []Entity, nonHarvestedProteins []Entity, enemyTentaclesTargets [][]bool) []Coord {
+func findShortestPathProt(s State, organs []Entity, nonHarvestedProteins []Entity, enemyTentaclesTargets [][]bool) []Coord {
 	from := make([]Coord, 0)
 	for _, organ := range organs {
 		from = append(from, organ.coord)
@@ -1228,14 +1233,14 @@ func findShortestPathProt(organs []Entity, nonHarvestedProteins []Entity, enemyT
 		to = append(to, protein.coord)
 	}
 
-	blockedCoords := make([][]bool, state.Height)
-	for i := 0; i < state.Height; i++ {
-		blockedCoords[i] = make([]bool, state.Width)
+	blockedCoords := make([][]bool, s.Height)
+	for i := 0; i < s.Height; i++ {
+		blockedCoords[i] = make([]bool, s.Width)
 	}
 
 	// block the cells that are targeted by the enemy tentacles
-	for i := 0; i < state.Height; i++ {
-		for j := 0; j < state.Width; j++ {
+	for i := 0; i < s.Height; i++ {
+		for j := 0; j < s.Width; j++ {
 			if enemyTentaclesTargets[i][j] {
 				blockedCoords[i][j] = true
 			}
@@ -1243,25 +1248,25 @@ func findShortestPathProt(organs []Entity, nonHarvestedProteins []Entity, enemyT
 	}
 
 	// block the cells that are not walkable
-	for i := 0; i < state.Height; i++ {
-		for j := 0; j < state.Width; j++ {
-			if !state.isWalkable(Coord{j, i}) {
+	for i := 0; i < s.Height; i++ {
+		for j := 0; j < s.Width; j++ {
+			if !s.isWalkable(Coord{j, i}) {
 				blockedCoords[i][j] = true
 			}
 		}
 	}
 
-	return findShortestPath(from, to, blockedCoords)
+	return findShortestPath(s, from, to, blockedCoords)
 }
 
-func findEnemyTentaclesTargets() [][]bool {
+func findEnemyTentaclesTargets(s State) [][]bool {
 	// find all the cells that are targeted by the enemy tentacles (cannot grow there)
-	tentacleTargets := make([][]bool, state.Height)
-	for i := 0; i < state.Height; i++ {
-		tentacleTargets[i] = make([]bool, state.Width)
+	tentacleTargets := make([][]bool, s.Height)
+	for i := 0; i < s.Height; i++ {
+		tentacleTargets[i] = make([]bool, s.Width)
 	}
 
-	for _, entity := range state.Entities {
+	for _, entity := range s.Entities {
 		if entity._type == TENTACLE && entity.owner == OPPONENT {
 			coord := entity.coord.add(offsets[entity.organDir])
 			if coord.isValid() {
@@ -1269,18 +1274,6 @@ func findEnemyTentaclesTargets() [][]bool {
 			}
 		}
 	}
-
-	// debug("Tentacle targets:\n")
-	// for i := 0; i < state.Height; i++ {
-	// 	for j := 0; j < state.Width; j++ {
-	// 		if tentacleTargets[i][j] {
-	// 			fmt.Fprintf(os.Stderr, "X ")
-	// 		} else {
-	// 			fmt.Fprintf(os.Stderr, ". ")
-	// 		}
-	// 	}
-	// 	fmt.Fprintf(os.Stderr, "\n")
-	// }
 
 	return tentacleTargets
 }
@@ -1545,29 +1538,29 @@ Finds the shortest path from any of my organs to any of the non-harvested protei
 It must avoid the enemy tentacles.
 Cannot go through existing organs.
 */
-func findShortestPath(from, to []Coord, forbiddenCells [][]bool) []Coord {
+func findShortestPath(s State, from, to []Coord, forbiddenCells [][]bool) []Coord {
 	// the chosen algorithm is BFS
 
-	toMap := make([][]bool, state.Height)
-	for i := 0; i < state.Height; i++ {
-		toMap[i] = make([]bool, state.Width)
+	toMap := make([][]bool, s.Height)
+	for i := 0; i < s.Height; i++ {
+		toMap[i] = make([]bool, s.Width)
 	}
 
 	for _, coord := range to {
 		toMap[coord.y][coord.x] = true
 	}
 
-	previous := make([][]Coord, state.Height)
-	for i := 0; i < state.Height; i++ {
-		previous[i] = make([]Coord, state.Width)
-		for j := 0; j < state.Width; j++ {
+	previous := make([][]Coord, s.Height)
+	for i := 0; i < s.Height; i++ {
+		previous[i] = make([]Coord, s.Width)
+		for j := 0; j < s.Width; j++ {
 			previous[i][j] = Coord{-1, -1}
 		}
 	}
 
-	visited := make([][]bool, state.Height)
-	for i := 0; i < state.Height; i++ {
-		visited[i] = make([]bool, state.Width)
+	visited := make([][]bool, s.Height)
+	for i := 0; i < s.Height; i++ {
+		visited[i] = make([]bool, s.Width)
 	}
 
 	queue := make([]Coord, 0)
