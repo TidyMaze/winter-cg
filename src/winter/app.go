@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"sort"
 )
@@ -726,7 +727,8 @@ func findBestActions(roots []Entity) PlayerActions {
 }
 
 func scoreActions(s State, actions []Action) float64 {
-	return 0
+	// random score
+	return rand.Float64()
 }
 
 func findActionsForOrganism(root Entity, organs []Entity) []Action {
@@ -778,7 +780,7 @@ func findGrowActions(root, organ Entity) []Action {
 		if coord.isValid() && state.isWalkable(coord) {
 			for _, _type := range []EntityType{BASIC, HARVESTER, TENTACLE, SPORER} {
 
-				if _type == BASIC {
+				if _type == BASIC && canGrow(state.MyProteins, BASIC) {
 					// for basic, direction doesn't matter
 					actions = append(actions, GrowAction{
 						rootOrganId: root.organId,
@@ -788,7 +790,11 @@ func findGrowActions(root, organ Entity) []Action {
 						dir:         N,
 						message:     "",
 					})
-				} else {
+				}
+
+				if (_type == HARVESTER && canGrow(state.MyProteins, HARVESTER)) ||
+					(_type == TENTACLE && canGrow(state.MyProteins, TENTACLE)) ||
+					(_type == SPORER && canGrow(state.MyProteins, SPORER)) {
 					for _, dir := range []Dir{N, S, W, E} {
 						actions = append(actions, GrowAction{
 							rootOrganId: root.organId,
