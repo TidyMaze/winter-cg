@@ -827,9 +827,7 @@ func findBestActions(roots []Entity, enemyTentaclesTargets [][]bool) PlayerActio
 }
 
 func scoreActions(s State, actions []Action) float64 {
-	// apply the actions
 	newState := applyActions(s, actions)
-
 	return scoreState(newState)
 }
 
@@ -840,7 +838,7 @@ func scoreState(s State) float64 {
 	myOrgans := findOrgans(s, ME)
 	enemyOrgans := findOrgans(s, OPPONENT)
 
-	return float64(len(harvested) - len(nonHarvested) + len(myOrgans) - len(enemyOrgans))
+	return float64(len(harvested)*10 - len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100)
 }
 
 // my organs (any root)
