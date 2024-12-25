@@ -1346,6 +1346,7 @@ func findDestroyed(s State, attacked Entity) []Entity {
 	queue = append(queue, attacked)
 	visited[attacked.coord.y][attacked.coord.x] = true
 	destroyed := make([]Entity, 0)
+	destroyed = append(destroyed, attacked)
 
 	for len(queue) > 0 {
 		current := queue[0]
