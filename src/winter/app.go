@@ -693,7 +693,7 @@ func findBestActions(roots []Entity) PlayerActions {
 		playerActions := make([]PlayerActions, 0)
 
 		for iComb, actions := range combinations {
-			debug("Actions for comb %d (%d): %+v\n", iComb, len(actions), actions)
+			debug("%d actions for comb (%d), ", iComb, len(actions))
 			playerActions = append(playerActions, PlayerActions{
 				actions: actions,
 				score:   scoreActions(state, actions),
