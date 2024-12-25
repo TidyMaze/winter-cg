@@ -837,16 +837,17 @@ func scoreState(s State) float64 {
 	// score is the number of harvested proteins plus the number of organs
 	harvested, nonHarvested := findHarvestedProteins(s)
 
-	organs := findOrgans(s)
+	myOrgans := findOrgans(s, ME)
+	enemyOrgans := findOrgans(s, OPPONENT)
 
-	return float64(len(harvested) - len(nonHarvested) + len(organs))
+	return float64(len(harvested) - len(nonHarvested) + len(myOrgans) - len(enemyOrgans))
 }
 
 // my organs (any root)
-func findOrgans(s State) []Entity {
+func findOrgans(s State, o Owner) []Entity {
 	organs := make([]Entity, 0)
 	for _, entity := range s.Entities {
-		if entity.owner == ME {
+		if entity.owner == o {
 			organs = append(organs, entity)
 		}
 	}
