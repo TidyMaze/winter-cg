@@ -809,10 +809,13 @@ func findBestActions(roots []Entity) PlayerActions {
 	debug("Top 10 combinations\n")
 	for i, actions := range allActionsCombinations {
 		if i < 10 {
-			debug("Combination %d, score: %f\n", i, actions.score)
+			actionsAsStr := ""
+
 			for _, action := range actions.actions {
-				debug("%+v\n", action)
+				actionsAsStr += fmt.Sprintf("%+v, ", action)
 			}
+
+			debug("Combination %d, score: %f %s\n", i, actions.score, actionsAsStr)
 		}
 	}
 
