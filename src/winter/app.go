@@ -946,10 +946,10 @@ func applyActions(s State, actions []Action) State {
 
 			// apply the grow cost to my proteins
 			growCost := growCost(a._type)
-			newState.MyProteins[growCost.costA]--
-			newState.MyProteins[growCost.costB]--
-			newState.MyProteins[growCost.costC]--
-			newState.MyProteins[growCost.costD]--
+			newState.MyProteins[0] -= growCost.costA
+			newState.MyProteins[1] -= growCost.costB
+			newState.MyProteins[2] -= growCost.costC
+			newState.MyProteins[3] -= growCost.costD
 		case WaitAction:
 			// do nothing
 		case SporeAction:
