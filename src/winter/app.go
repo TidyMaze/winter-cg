@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"sort"
 )
@@ -331,8 +330,9 @@ func showDir(dir Dir) string {
 		return "E"
 	case W:
 		return "W"
+	default:
+		panic(fmt.Sprintf("Unknown dir %d", dir))
 	}
-	panic(fmt.Sprintf("Unknown dir %d", dir))
 }
 
 func parseType(_type string) EntityType {
@@ -371,8 +371,9 @@ func showOrganType(_type EntityType) string {
 		return "TENTACLE"
 	case SPORER:
 		return "SPORER"
+	default:
+		panic(fmt.Sprintf("Unknown organ type %d", _type))
 	}
-	panic(fmt.Sprintf("Unknown organ type %d", _type))
 }
 
 func parseOwner(owner int) Owner {
@@ -727,8 +728,133 @@ func findBestActions(roots []Entity) PlayerActions {
 }
 
 func scoreActions(s State, actions []Action) float64 {
-	// random score
-	return rand.Float64()
+	// apply the actions
+	newState := applyActions(s, actions)
+
+	return scoreState(newState)
+}
+
+func scoreState(s State) float64 {
+	// score is the number of harvested proteins plus the number of organs
+	harvested, nonHarvested := findHarvestedProteins()
+
+	organs := findOrgans(s)
+
+	return float64(len(harvested) - len(nonHarvested) + len(organs))
+}
+
+// my organs (any root)
+func findOrgans(s State) []Entity {
+	organs := make([]Entity, 0)
+	for _, entity := range s.Entities {
+		if entity.owner == ME {
+			organs = append(organs, entity)
+		}
+	}
+	return organs
+}
+
+func applyActions(s State, actions []Action) State {
+	// copy the state
+	newState := copyState(s)
+
+	growCoords := make([][]bool, 0)
+
+	for i := 0; i < state.Height; i++ {
+		growCoords[i] = make([]bool, state.Width)
+		for j := 0; j < state.Width; j++ {
+			growCoords[i][j] = false
+		}
+	}
+
+	// apply each action in order
+	for _, action := range actions {
+		switch a := action.(type) {
+		case GrowAction:
+			// grow the organ
+			newOrganId := maxOrganId(newState.Entities) + 1
+
+			newEntity := Entity{
+				coord:         a.coord,
+				_type:         a._type,
+				owner:         ME,
+				organId:       newOrganId,
+				organDir:      a.dir,
+				organParentId: a.organId,
+				organRootId:   a.rootOrganId,
+			}
+
+			newState.Entities = append(newState.Entities, newEntity)
+			newState.Grid[a.coord.y][a.coord.x] = newEntity.organId
+
+			debug("Grew organ %+v\n", newEntity)
+
+			if growCoords[a.coord.y][a.coord.x] {
+				panic(fmt.Sprintf("Already grew organ at %+v", a.coord))
+			}
+
+			// apply the grow cost to my proteins
+			growCost := growCost(a._type)
+			newState.MyProteins[growCost.costA]--
+			newState.MyProteins[growCost.costB]--
+			newState.MyProteins[growCost.costC]--
+			newState.MyProteins[growCost.costD]--
+		case WaitAction:
+			// do nothing
+		case SporeAction:
+			panic(fmt.Sprintf("Spore action not implemented for action %+v", a))
+		}
+	}
+
+	return newState
+}
+
+func maxOrganId(entities []Entity) int {
+	maxId := -1
+	for _, entity := range entities {
+		if entity.organId > maxId {
+			maxId = entity.organId
+		}
+	}
+	return maxId
+}
+
+func copyState(s State) State {
+	newState := State{
+		Height:               s.Height,
+		Width:                s.Width,
+		Entities:             make([]Entity, len(s.Entities)),
+		Grid:                 make([][]int, s.Height),
+		MyProteins:           make([]int, 4),
+		OppProteins:          make([]int, 4),
+		RequiredActionsCount: s.RequiredActionsCount,
+	}
+
+	// copy entities
+	for i, entity := range s.Entities {
+		newState.Entities[i] = entity
+	}
+
+	// copy grid
+	for i := 0; i < s.Height; i++ {
+		newState.Grid[i] = make([]int, s.Width)
+		for j := 0; j < s.Width; j++ {
+			newState.Grid[i][j] = s.Grid[i][j]
+		}
+	}
+
+	// copy proteins
+	newState.MyProteins[0] = s.MyProteins[0]
+	newState.MyProteins[1] = s.MyProteins[1]
+	newState.MyProteins[2] = s.MyProteins[2]
+	newState.MyProteins[3] = s.MyProteins[3]
+
+	newState.OppProteins[0] = s.OppProteins[0]
+	newState.OppProteins[1] = s.OppProteins[1]
+	newState.OppProteins[2] = s.OppProteins[2]
+	newState.OppProteins[3] = s.OppProteins[3]
+
+	return newState
 }
 
 func findActionsForOrganism(root Entity, organs []Entity) []Action {
@@ -1188,8 +1314,9 @@ func buildSporeCellsMap(nonHarvestedProteins []Entity) [][]bool {
 	return sporeCells
 }
 
-func findNonHarvestedProteins() []Entity {
+func findHarvestedProteins() ([]Entity, []Entity) {
 	var nonHarvestedProteins []Entity
+	var harvestedProteins []Entity
 
 	for _, entity := range state.Entities {
 		if entity._type.isProtein() {
@@ -1212,7 +1339,7 @@ func findNonHarvestedProteins() []Entity {
 			}
 
 			if len(myHarvesters) > 0 {
-				// debug("My harvesters for protein: %+v: %+v\n", entity, myHarvesters)
+				harvestedProteins = append(harvestedProteins, entity)
 			} else {
 				nonHarvestedProteins = append(nonHarvestedProteins, entity)
 			}
@@ -1220,13 +1347,21 @@ func findNonHarvestedProteins() []Entity {
 	}
 
 	nonHarvestedProteinsIds := make([]int, 0)
+	harvestedProteinsIds := make([]int, 0)
+
 	for _, protein := range nonHarvestedProteins {
 		nonHarvestedProteinsIds = append(nonHarvestedProteinsIds, protein.organId)
 	}
 
 	debug("Non-harvested proteins: %+v\n", nonHarvestedProteinsIds)
 
-	return nonHarvestedProteins
+	for _, protein := range harvestedProteins {
+		harvestedProteinsIds = append(harvestedProteinsIds, protein.organId)
+	}
+
+	debug("Harvested proteins: %+v\n", harvestedProteinsIds)
+
+	return harvestedProteins, nonHarvestedProteins
 }
 
 func findGrowType() EntityType {
@@ -1544,17 +1679,26 @@ func main() {
 	}
 }
 
-func canGrow(proteinCounts []int, _type EntityType) bool {
+type OrganGrowCost struct {
+	costA, costB, costC, costD int
+}
+
+func growCost(_type EntityType) OrganGrowCost {
 	switch _type {
 	case BASIC:
-		return proteinCounts[0] >= 1
+		return OrganGrowCost{1, 0, 0, 0}
 	case HARVESTER:
-		return proteinCounts[2] >= 1 && proteinCounts[3] >= 1
+		return OrganGrowCost{0, 0, 1, 1}
 	case TENTACLE:
-		return proteinCounts[1] >= 1 && proteinCounts[2] >= 1
+		return OrganGrowCost{0, 1, 1, 0}
 	case SPORER:
-		return proteinCounts[1] >= 1 && proteinCounts[3] >= 1
+		return OrganGrowCost{0, 1, 0, 1}
 	default:
 		panic(fmt.Sprintf("Unknown type %d", _type))
 	}
+}
+
+func canGrow(proteinCounts []int, _type EntityType) bool {
+	cost := growCost(_type)
+	return proteinCounts[0] >= cost.costA && proteinCounts[1] >= cost.costB && proteinCounts[2] >= cost.costC && proteinCounts[3] >= cost.costD
 }
