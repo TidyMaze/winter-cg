@@ -449,6 +449,12 @@ func parseTurnState() {
 			organRootId:   organRootId,
 		}
 
+		if entity.organId != i {
+			debug("Entity %d: %+v not ok (got %d)\n", i, entity, entity.organId)
+		} else {
+			debug("Entity %d: %+v ok\n", i, entity)
+		}
+
 		state.Entities[i] = entity
 
 		state.Grid[y][x] = i
@@ -1350,6 +1356,7 @@ func findHarvestedProteins() ([]Entity, []Entity) {
 	harvestedProteinsIds := make([]int, 0)
 
 	for _, protein := range nonHarvestedProteins {
+		debug("Adding non-harvested protein: %+v\n", protein)
 		nonHarvestedProteinsIds = append(nonHarvestedProteinsIds, protein.organId)
 	}
 
