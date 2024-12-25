@@ -898,7 +898,7 @@ func applyActions(s State, actions []Action) State {
 				newState.Grid[a.coord.y][a.coord.x] = nil
 
 				// remove the old entity from the entities list
-				newState.Entities = removeEntity(newState.Entities, oldEntityAtCoord)
+				newState.Entities = removeEntity(newState.Entities, *oldEntityAtCoord)
 			}
 
 			newState.Entities = append(newState.Entities, newEntity)
@@ -916,8 +916,14 @@ func applyActions(s State, actions []Action) State {
 				if neighborCoord.isValid() {
 					neighborEntity := newState.Grid[neighborCoord.y][neighborCoord.x]
 					if neighborEntity != nil && neighborEntity.owner == OPPONENT {
-						newState.Grid[neighborCoord.y][neighborCoord.x] = nil
-						newState.Entities = removeEntity(newState.Entities, neighborEntity)
+
+						// get all children of the killed entity
+						destroyedChildren := findDestroyed(newState, *neighborEntity)
+
+						for _, destroyedChild := range destroyedChildren {
+							newState.Grid[destroyedChild.coord.y][destroyedChild.coord.x] = nil
+							newState.Entities = removeEntity(newState.Entities, destroyedChild)
+						}
 					}
 				}
 			}
@@ -938,7 +944,7 @@ func applyActions(s State, actions []Action) State {
 	return newState
 }
 
-func removeEntity(entities []Entity, entity *Entity) []Entity {
+func removeEntity(entities []Entity, entity Entity) []Entity {
 	// find index of the entity
 	index := -1
 
@@ -1304,14 +1310,14 @@ func findTentacleAttacks(organs []Entity, enemyTentaclesTargets [][]bool) []Tent
 						attacked := state.Grid[attackedCoord.y][attackedCoord.x]
 						if attacked.owner == OPPONENT {
 
-							destroyedCount := findDestroyedCount(*attacked)
+							destroyed := findDestroyed(state, *attacked)
 
 							attacks = append(attacks, TentacleGrowPlan{
 								organ:          organ,
 								growCoord:      coord,
 								dir:            dir,
 								attacked:       *attacked,
-								destroyedCount: destroyedCount,
+								destroyedCount: len(destroyed),
 							})
 						}
 					}
@@ -1323,19 +1329,19 @@ func findTentacleAttacks(organs []Entity, enemyTentaclesTargets [][]bool) []Tent
 	return attacks
 }
 
-func findDestroyedCount(attacked Entity) int {
-	// find the number of enemy organs that will be destroyed if the attacked organ is destroyed
+func findDestroyed(s State, attacked Entity) []Entity {
+	// find the enemy organs that will be destroyed if the attacked organ is destroyed
 	// use BFS to find all the children of the attacked organ
 
-	visited := make([][]bool, state.Height)
-	for i := 0; i < state.Height; i++ {
-		visited[i] = make([]bool, state.Width)
+	visited := make([][]bool, s.Height)
+	for i := 0; i < s.Height; i++ {
+		visited[i] = make([]bool, s.Width)
 	}
 
 	queue := make([]Entity, 0)
 	queue = append(queue, attacked)
 	visited[attacked.coord.y][attacked.coord.x] = true
-	destroyedCount := 1
+	destroyed := make([]Entity, 0)
 
 	for len(queue) > 0 {
 		current := queue[0]
@@ -1343,18 +1349,18 @@ func findDestroyedCount(attacked Entity) int {
 
 		for _, offset := range offsets {
 			neighbor := current.coord.add(offset)
-			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && state.Grid[neighbor.y][neighbor.x] != nil {
-				entity := state.Grid[neighbor.y][neighbor.x]
+			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && s.Grid[neighbor.y][neighbor.x] != nil {
+				entity := s.Grid[neighbor.y][neighbor.x]
 				if entity.organParentId == current.organId {
 					visited[neighbor.y][neighbor.x] = true
 					queue = append(queue, *entity)
-					destroyedCount++
+					destroyed = append(destroyed, *entity)
 				}
 			}
 		}
 	}
 
-	return destroyedCount
+	return destroyed
 }
 
 func growToFrontier(organs []Entity, enemyTentaclesTargets [][]bool) {
