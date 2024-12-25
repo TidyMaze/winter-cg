@@ -729,6 +729,7 @@ func allCombinationsOfSlices[T any](slices [][]T) [][]T {
 type PlayerActions struct {
 	actions []Action
 	score   float64
+	detail  string
 }
 
 func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) PlayerActions {
@@ -779,9 +780,12 @@ func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) Pl
 
 		for _, actions := range combinations {
 			//debug("%d actions for comb (%d), ", len(actions), iComb)
+			score, detail := scoreActions(globalState, actions)
+
 			playerActions = append(playerActions, PlayerActions{
 				actions: actions,
-				score:   scoreActions(globalState, actions),
+				score:   score,
+				detail:  detail,
 			})
 		}
 
@@ -815,7 +819,7 @@ func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) Pl
 				actionsAsStr += fmt.Sprintf("%+v, ", action)
 			}
 
-			debug("Combination %d, score: %f %s\n", i, actions.score, actionsAsStr)
+			debug("Combination %d, score: %f (%s) %s\n", i, actions.score, actions.detail, actionsAsStr)
 		}
 	}
 
@@ -826,12 +830,12 @@ func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) Pl
 	return allActionsCombinations[0]
 }
 
-func scoreActions(s State, actions []Action) float64 {
+func scoreActions(s State, actions []Action) (float64, string) {
 	newState := applyActions(s, actions)
 	return scoreState(newState)
 }
 
-func scoreState(s State) float64 {
+func scoreState(s State) (float64, string) {
 	// score is the number of harvested proteins plus the number of organs
 	harvested, nonHarvested := findHarvestedProteins(s)
 
@@ -846,7 +850,9 @@ func scoreState(s State) float64 {
 	// better to have more proteins left (do not waste them to move)
 	proteinScore := s.MyProteins[0] + s.MyProteins[1] + s.MyProteins[2] + s.MyProteins[3]
 
-	return float64(len(harvested)*10 + len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein + proteinScore)
+	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, my organs: %d, enemy organs: %d, distance to closest protein: %d, protein score: %d\n", len(harvested), len(nonHarvested), len(myOrgans), len(enemyOrgans), distanceClosestProtein, proteinScore)
+
+	return float64(len(harvested)*10 + len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein + proteinScore), detailScore
 }
 
 // my organs (any root)
