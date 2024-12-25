@@ -449,8 +449,18 @@ func parseTurnState() {
 			organRootId:   organRootId,
 		}
 
+		if entity._type == ROOT {
+			debug("Root: %+v\n", entity)
+
+			if entity.organId == 0 {
+				panic(fmt.Sprintf("Root with id 0: %+v", entity))
+			}
+		}
+
 		if entity.organId != i {
-			debug("Entity %d: %+v not ok (got %d)\n", i, entity, entity.organId)
+			if entity._type != WALL && entity._type != PROTEIN_A && entity._type != PROTEIN_B && entity._type != PROTEIN_C && entity._type != PROTEIN_D {
+				debug("Entity %d: %+v not ok (got %d)\n", i, entity, entity.organId)
+			}
 		} else {
 			debug("Entity %d: %+v ok\n", i, entity)
 		}
@@ -1352,21 +1362,20 @@ func findHarvestedProteins() ([]Entity, []Entity) {
 		}
 	}
 
-	nonHarvestedProteinsIds := make([]int, 0)
-	harvestedProteinsIds := make([]int, 0)
+	nonHarvestedProteinsCoords := make([]Coord, 0)
+	harvestedProteinsCoords := make([]Coord, 0)
 
 	for _, protein := range nonHarvestedProteins {
-		debug("Adding non-harvested protein: %+v\n", protein)
-		nonHarvestedProteinsIds = append(nonHarvestedProteinsIds, protein.organId)
+		nonHarvestedProteinsCoords = append(nonHarvestedProteinsCoords, protein.coord)
 	}
 
-	debug("Non-harvested proteins: %+v\n", nonHarvestedProteinsIds)
+	debug("Non-harvested proteins: %+v\n", nonHarvestedProteinsCoords)
 
 	for _, protein := range harvestedProteins {
-		harvestedProteinsIds = append(harvestedProteinsIds, protein.organId)
+		harvestedProteinsCoords = append(harvestedProteinsCoords, protein.coord)
 	}
 
-	debug("Harvested proteins: %+v\n", harvestedProteinsIds)
+	debug("Harvested proteins: %+v\n", harvestedProteinsCoords)
 
 	return harvestedProteins, nonHarvestedProteins
 }
