@@ -336,11 +336,11 @@ func (e Entity) String() string {
 	case BASIC:
 		return fmt.Sprintf("Basic at %+v, owner: %s, organId: %d, organParentId: %d, organRootId: %d", e.coord, showOwner(e.owner), e.organId, e.organParentId, e.organRootId)
 	case HARVESTER:
-		return fmt.Sprintf("Harvester at %+v, owner: %s, organId: %d, dir %s, organParentId: %d, organRootId: %d", e.coord, showOwner(e.owner), e.organId, showDir(e.organDir), e.organParentId, e.organRootId)
+		return fmt.Sprintf("Harvester %s at %+v, owner: %s, organId: %d, organParentId: %d, organRootId: %d", showDir(e.organDir), e.coord, showOwner(e.owner), e.organId, e.organParentId, e.organRootId)
 	case TENTACLE:
-		return fmt.Sprintf("Tentacle at %+v, owner: %s, organId: %d, dir %s, organParentId: %d, organRootId: %d", e.coord, showOwner(e.owner), e.organId, showDir(e.organDir), e.organParentId, e.organRootId)
+		return fmt.Sprintf("Tentacle %s at %+v, owner: %s, organId: %d, organParentId: %d, organRootId: %d", showDir(e.organDir), e.coord, showOwner(e.owner), e.organId, e.organParentId, e.organRootId)
 	case SPORER:
-		return fmt.Sprintf("Sporer at %+v, owner: %s, organId: %d, dir %s, organParentId: %d, organRootId: %d", e.coord, showOwner(e.owner), e.organId, showDir(e.organDir), e.organParentId, e.organRootId)
+		return fmt.Sprintf("Sporer %s at %+v, owner: %s, organId: %d, organParentId: %d, organRootId: %d", showDir(e.organDir), e.coord, showOwner(e.owner), e.organId, e.organParentId, e.organRootId)
 	case PROTEIN_A:
 		return fmt.Sprintf("Protein A at %+v", e.coord)
 	case PROTEIN_B:
@@ -349,6 +349,8 @@ func (e Entity) String() string {
 		return fmt.Sprintf("Protein C at %+v", e.coord)
 	case PROTEIN_D:
 		return fmt.Sprintf("Protein D at %+v", e.coord)
+	default:
+		panic(fmt.Sprintf("Unknown entity type %d", e._type))
 	}
 }
 
