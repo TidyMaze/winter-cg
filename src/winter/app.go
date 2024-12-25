@@ -790,13 +790,13 @@ func findBestActions(roots []Entity) PlayerActions {
 		allActionsCombinations = append(allActionsCombinations, playerActions...)
 	}
 
-	debug("All actions\n")
-	for i, actions := range allActionsCombinations {
-		debug("Combination %d\n", i)
-		for _, action := range actions.actions {
-			debug("%+v\n", action)
-		}
-	}
+	//debug("All actions\n")
+	//for i, actions := range allActionsCombinations {
+	//	debug("Combination %d\n", i)
+	//	for _, action := range actions.actions {
+	//		debug("%+v\n", action)
+	//	}
+	//}
 
 	// find the best combination of actions
 	// sorted by score
