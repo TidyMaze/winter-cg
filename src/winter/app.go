@@ -891,6 +891,10 @@ func applyActions(s State, actions []Action) State {
 					panic(fmt.Sprintf("Old entity coord %+v different from new coord %+v", oldEntityAtCoord.coord, a.coord))
 				}
 
+				if oldEntityAtCoord._type != PROTEIN_A && oldEntityAtCoord._type != PROTEIN_B && oldEntityAtCoord._type != PROTEIN_C && oldEntityAtCoord._type != PROTEIN_D {
+					panic(fmt.Sprintf("Entity at %+v is not a protein", a.coord))
+				}
+
 				newState.Grid[a.coord.y][a.coord.x] = nil
 
 				// remove the old entity from the entities list
