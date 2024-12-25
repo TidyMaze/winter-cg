@@ -182,7 +182,7 @@ func (c Coord) add(offset Coord) Coord {
 }
 
 func (c Coord) isValid() bool {
-	return c.x >= 0 && c.x < state.Width && c.y >= 0 && c.y < state.Height
+	return c.x >= 0 && c.x < globalState.Width && c.y >= 0 && c.y < globalState.Height
 }
 
 type EntityType int
@@ -365,10 +365,10 @@ type State struct {
 }
 
 func (s State) isWalkable(coord Coord) bool {
-	return state.Grid[coord.y][coord.x] == nil || state.Grid[coord.y][coord.x]._type.isProtein()
+	return globalState.Grid[coord.y][coord.x] == nil || globalState.Grid[coord.y][coord.x]._type.isProtein()
 }
 
-var state State
+var globalState State
 
 func parseDir(dir string) Dir {
 	switch dir {
@@ -476,18 +476,18 @@ type SporePlan struct {
 }
 
 func parseTurnState() {
-	state.Grid = make([][]*Entity, state.Height)
-	for i := 0; i < state.Height; i++ {
-		state.Grid[i] = make([]*Entity, state.Width)
-		for j := 0; j < state.Width; j++ {
-			state.Grid[i][j] = nil
+	globalState.Grid = make([][]*Entity, globalState.Height)
+	for i := 0; i < globalState.Height; i++ {
+		globalState.Grid[i] = make([]*Entity, globalState.Width)
+		for j := 0; j < globalState.Width; j++ {
+			globalState.Grid[i][j] = nil
 		}
 	}
 
 	var entityCount int
 	fmt.Scan(&entityCount)
 
-	state.Entities = make([]Entity, entityCount)
+	globalState.Entities = make([]Entity, entityCount)
 
 	for i := 0; i < entityCount; i++ {
 		// y: grid coordinate
@@ -522,26 +522,26 @@ func parseTurnState() {
 			}
 		}
 
-		state.Entities[i] = entity
+		globalState.Entities[i] = entity
 
-		state.Grid[y][x] = &state.Entities[i]
+		globalState.Grid[y][x] = &globalState.Entities[i]
 	}
 
 	// debug the entities
-	// for _, entity := range state.Entities {
+	// for _, entity := range globalState.Entities {
 	// 	// debug("Entity: %+v\n", entity)
 	// }
 
 	// print the grid
-	// for i := 0; i < state.Height; i++ {
-	// 	for j := 0; j < state.Width; j++ {
-	// 		fmt.Fprintf(os.Stderr, "%d ", state.Grid[i][j])
+	// for i := 0; i < globalState.Height; i++ {
+	// 	for j := 0; j < globalState.Width; j++ {
+	// 		fmt.Fprintf(os.Stderr, "%d ", globalState.Grid[i][j])
 	// 	}
 	// 	fmt.Fprintf(os.Stderr, "\n")
 	// }
 
-	state.MyProteins = make([]int, 4)
-	state.OppProteins = make([]int, 4)
+	globalState.MyProteins = make([]int, 4)
+	globalState.OppProteins = make([]int, 4)
 
 	// myD: your protein stock
 	var myA, myB, myC, myD int
@@ -549,10 +549,10 @@ func parseTurnState() {
 
 	debug("My proteins: A: %d, B: %d, C: %d, D: %d\n", myA, myB, myC, myD)
 
-	state.MyProteins[0] = myA
-	state.MyProteins[1] = myB
-	state.MyProteins[2] = myC
-	state.MyProteins[3] = myD
+	globalState.MyProteins[0] = myA
+	globalState.MyProteins[1] = myB
+	globalState.MyProteins[2] = myC
+	globalState.MyProteins[3] = myD
 
 	// oppD: opponent's protein stock
 	var oppA, oppB, oppC, oppD int
@@ -560,10 +560,10 @@ func parseTurnState() {
 
 	debug("Opponent proteins: A: %d, B: %d, C: %d, D: %d\n", oppA, oppB, oppC, oppD)
 
-	state.OppProteins[0] = oppA
-	state.OppProteins[1] = oppB
-	state.OppProteins[2] = oppC
-	state.OppProteins[3] = oppD
+	globalState.OppProteins[0] = oppA
+	globalState.OppProteins[1] = oppB
+	globalState.OppProteins[2] = oppC
+	globalState.OppProteins[3] = oppD
 
 	// requiredActionsCount: your number of organisms, output an action for each one in any order
 	var requiredActionsCount int
@@ -571,13 +571,13 @@ func parseTurnState() {
 
 	debug("Required actions count: %d\n", requiredActionsCount)
 
-	state.RequiredActionsCount = requiredActionsCount
+	globalState.RequiredActionsCount = requiredActionsCount
 }
 
 func findOrgansOfOrganism(root Entity) []Entity {
 	// find all organs that have the organRootId equal to the root.organId
 	var organs []Entity
-	for _, entity := range state.Entities {
+	for _, entity := range globalState.Entities {
 		if entity.organRootId == root.organId {
 			organs = append(organs, entity)
 		}
@@ -665,24 +665,24 @@ func (a SporeAction) String() string {
 func sendActions() {
 	// find all roots
 	var roots []Entity
-	for _, entity := range state.Entities {
+	for _, entity := range globalState.Entities {
 		if entity._type == ROOT && entity.owner == ME {
 			roots = append(roots, entity)
 		}
 	}
 
-	if len(roots) != state.RequiredActionsCount {
-		panic(fmt.Sprintf("Expected %d roots, found %d", state.RequiredActionsCount, len(roots)))
+	if len(roots) != globalState.RequiredActionsCount {
+		panic(fmt.Sprintf("Expected %d roots, found %d", globalState.RequiredActionsCount, len(roots)))
 	}
 
-	enemyTentaclesTargets := findEnemyTentaclesTargets(state)
+	enemyTentaclesTargets := findEnemyTentaclesTargets(globalState)
 
 	// find the non-harvested proteins
 	//nonHarvestedProteins := findNonHarvestedProteins()
 
-	actions := findBestActions(roots, enemyTentaclesTargets).actions
+	actions := findBestActions(globalState, roots, enemyTentaclesTargets).actions
 
-	for i := 0; i < state.RequiredActionsCount; i++ {
+	for i := 0; i < globalState.RequiredActionsCount; i++ {
 		// get the first root
 		var root Entity = roots[i]
 
@@ -731,9 +731,7 @@ type PlayerActions struct {
 	score   float64
 }
 
-func findBestActions(roots []Entity, enemyTentaclesTargets [][]bool) PlayerActions {
-	debug("test combinations %+v\n", allCombinationsOfSlices([][]int{{1, 2}, {3, 4}}))
-
+func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) PlayerActions {
 	allActionsCombinations := make([]PlayerActions, 0)
 
 	debug("Permuting roots %+v\n", roots)
@@ -752,7 +750,7 @@ func findBestActions(roots []Entity, enemyTentaclesTargets [][]bool) PlayerActio
 		organs := findOrgansOfOrganism(root)
 
 		// find all possible actions for each organ
-		actionsPerRoot[root.organId] = findActionsForOrganism(root, organs, enemyTentaclesTargets)
+		actionsPerRoot[root.organId] = findActionsForOrganism(s, root, organs, enemyTentaclesTargets)
 	}
 
 	for iPerm, rootPermutation := range rootPermutations {
@@ -783,7 +781,7 @@ func findBestActions(roots []Entity, enemyTentaclesTargets [][]bool) PlayerActio
 			//debug("%d actions for comb (%d), ", len(actions), iComb)
 			playerActions = append(playerActions, PlayerActions{
 				actions: actions,
-				score:   scoreActions(state, actions),
+				score:   scoreActions(globalState, actions),
 			})
 		}
 
@@ -861,11 +859,11 @@ func applyActions(s State, actions []Action) State {
 	// copy the state
 	newState := copyState(s)
 
-	growCoords := make([][]bool, state.Height)
+	growCoords := make([][]bool, globalState.Height)
 
-	for i := 0; i < state.Height; i++ {
-		growCoords[i] = make([]bool, state.Width)
-		for j := 0; j < state.Width; j++ {
+	for i := 0; i < globalState.Height; i++ {
+		growCoords[i] = make([]bool, globalState.Width)
+		for j := 0; j < globalState.Width; j++ {
 			growCoords[i][j] = false
 		}
 	}
@@ -1021,12 +1019,12 @@ func copyState(s State) State {
 	return newState
 }
 
-func findActionsForOrganism(root Entity, organs []Entity, enemyTentaclesTargets [][]bool) []Action {
+func findActionsForOrganism(s State, root Entity, organs []Entity, enemyTentaclesTargets [][]bool) []Action {
 	actions := make([]Action, 0)
 
 	for _, organ := range organs {
 		// find all possible actions for the organ
-		actionsForOrgan := findActionsForOrgan(root, organ, enemyTentaclesTargets)
+		actionsForOrgan := findActionsForOrgan(s, root, organ, enemyTentaclesTargets)
 		actions = append(actions, actionsForOrgan...)
 		//debug("Actions for organ %+v: %d\n", organ.organId, len(actions))
 	}
@@ -1036,11 +1034,11 @@ func findActionsForOrganism(root Entity, organs []Entity, enemyTentaclesTargets 
 	return actions
 }
 
-func findActionsForOrgan(root, organ Entity, enemyTentaclesTargets [][]bool) []Action {
+func findActionsForOrgan(s State, root, organ Entity, enemyTentaclesTargets [][]bool) []Action {
 	actions := make([]Action, 0)
 
 	// find the grow actions
-	growActions := findGrowActions(root, organ, enemyTentaclesTargets)
+	growActions := findGrowActions(s, root, organ, enemyTentaclesTargets)
 	actions = append(actions, growActions...)
 
 	// find the spore actions
@@ -1061,16 +1059,16 @@ func findWaitActions(root Entity, organ Entity) []Action {
 	}}
 }
 
-func findGrowActions(root, organ Entity, enemyTentaclesTargets [][]bool) []Action {
+func findGrowActions(s State, root, organ Entity, enemyTentaclesTargets [][]bool) []Action {
 	actions := make([]Action, 0)
 
 	// find all the possible grow actions for the organ
 	for _, offset := range offsets {
 		coord := organ.coord.add(offset)
-		if coord.isValid() && state.isWalkable(coord) && !enemyTentaclesTargets[coord.y][coord.x] {
+		if coord.isValid() && s.isWalkable(coord) && !enemyTentaclesTargets[coord.y][coord.x] {
 			for _, _type := range []EntityType{BASIC, HARVESTER, TENTACLE, SPORER} {
 
-				if _type == BASIC && canGrow(state.MyProteins, BASIC) {
+				if _type == BASIC && canGrow(s.MyProteins, BASIC) {
 					// for basic, direction doesn't matter
 					actions = append(actions, GrowAction{
 						rootOrganId: root.organId,
@@ -1082,9 +1080,9 @@ func findGrowActions(root, organ Entity, enemyTentaclesTargets [][]bool) []Actio
 					})
 				}
 
-				if (_type == HARVESTER && canGrow(state.MyProteins, HARVESTER)) ||
-					(_type == TENTACLE && canGrow(state.MyProteins, TENTACLE)) ||
-					(_type == SPORER && canGrow(state.MyProteins, SPORER)) {
+				if (_type == HARVESTER && canGrow(s.MyProteins, HARVESTER)) ||
+					(_type == TENTACLE && canGrow(s.MyProteins, TENTACLE)) ||
+					(_type == SPORER && canGrow(s.MyProteins, SPORER)) {
 					for _, dir := range []Dir{N, S, W, E} {
 						actions = append(actions, GrowAction{
 							rootOrganId: root.organId,
@@ -1133,18 +1131,18 @@ func findClosestOrganTo(to []Coord, from Coord, tentacleTargets [][]bool) Coord 
 	//debug("Finding closest organ to target: %+v\n", to)
 	//debug("From: %+v\n", from)
 
-	visited := make([][]bool, state.Height)
-	for i := 0; i < state.Height; i++ {
-		visited[i] = make([]bool, state.Width)
+	visited := make([][]bool, globalState.Height)
+	for i := 0; i < globalState.Height; i++ {
+		visited[i] = make([]bool, globalState.Width)
 	}
 
 	queue := make([]Coord, 0)
 	queue = append(queue, from)
 	visited[from.y][from.x] = true
 
-	toMap := make([][]bool, state.Height)
-	for i := 0; i < state.Height; i++ {
-		toMap[i] = make([]bool, state.Width)
+	toMap := make([][]bool, globalState.Height)
+	for i := 0; i < globalState.Height; i++ {
+		toMap[i] = make([]bool, globalState.Width)
 	}
 
 	for _, coord := range to {
@@ -1165,9 +1163,9 @@ func findClosestOrganTo(to []Coord, from Coord, tentacleTargets [][]bool) Coord 
 			if neighbor.isValid() &&
 				!visited[neighbor.y][neighbor.x] &&
 				!tentacleTargets[neighbor.y][neighbor.x] &&
-				(state.Grid[neighbor.y][neighbor.x] == nil ||
-					state.Grid[neighbor.y][neighbor.x]._type.isProtein() ||
-					state.Grid[neighbor.y][neighbor.x].owner != NONE) {
+				(globalState.Grid[neighbor.y][neighbor.x] == nil ||
+					globalState.Grid[neighbor.y][neighbor.x]._type.isProtein() ||
+					globalState.Grid[neighbor.y][neighbor.x].owner != NONE) {
 				visited[neighbor.y][neighbor.x] = true
 				queue = append(queue, neighbor)
 			}
@@ -1180,16 +1178,16 @@ func findClosestOrganTo(to []Coord, from Coord, tentacleTargets [][]bool) Coord 
 func findClosestEnemyOrgan(root Entity) Coord {
 	debug("Finding closest enemy organ from root: %+v\n", root)
 
-	//for _, entity := range state.Entities {
+	//for _, entity := range globalState.Entities {
 	//	if entity.owner == OPPONENT {
 	//		debug("Possible enemy organ: %+v\n", entity)
 	//	}
 	//}
 
 	// use BFS to find the closest enemy organ from the root
-	visited := make([][]bool, state.Height)
-	for i := 0; i < state.Height; i++ {
-		visited[i] = make([]bool, state.Width)
+	visited := make([][]bool, globalState.Height)
+	for i := 0; i < globalState.Height; i++ {
+		visited[i] = make([]bool, globalState.Width)
 	}
 
 	queue := make([]Coord, 0)
@@ -1200,8 +1198,8 @@ func findClosestEnemyOrgan(root Entity) Coord {
 		current := queue[0]
 		queue = queue[1:]
 
-		if state.Grid[current.y][current.x] != nil {
-			entity := state.Grid[current.y][current.x]
+		if globalState.Grid[current.y][current.x] != nil {
+			entity := globalState.Grid[current.y][current.x]
 			if entity.owner == OPPONENT {
 				debug("Found enemy organ at %+v\n", current)
 				return current
@@ -1210,9 +1208,9 @@ func findClosestEnemyOrgan(root Entity) Coord {
 
 		for _, offset := range offsets {
 			neighbor := current.add(offset)
-			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && (state.Grid[neighbor.y][neighbor.x] == nil ||
-				state.Grid[neighbor.y][neighbor.x]._type.isProtein() ||
-				state.Grid[neighbor.y][neighbor.x].owner != NONE) {
+			if neighbor.isValid() && !visited[neighbor.y][neighbor.x] && (globalState.Grid[neighbor.y][neighbor.x] == nil ||
+				globalState.Grid[neighbor.y][neighbor.x]._type.isProtein() ||
+				globalState.Grid[neighbor.y][neighbor.x].owner != NONE) {
 				visited[neighbor.y][neighbor.x] = true
 				queue = append(queue, neighbor)
 			}
@@ -1286,26 +1284,26 @@ type TentacleGrowPlan struct {
 	destroyedCount int
 }
 
-func findTentacleAttacks(organs []Entity, enemyTentaclesTargets [][]bool) []TentacleGrowPlan {
+func findTentacleAttacks(s State, organs []Entity, enemyTentaclesTargets [][]bool) []TentacleGrowPlan {
 	// find all the tentacles that I can grow to instantly kill an opponent organ
 	attacks := make([]TentacleGrowPlan, 0)
 
-	if !canGrow(state.MyProteins, TENTACLE) {
+	if !canGrow(s.MyProteins, TENTACLE) {
 		return attacks
 	}
 
 	for _, organ := range organs {
 		for _, offset := range offsets {
 			coord := organ.coord.add(offset)
-			if coord.isValid() && state.isWalkable(coord) && !enemyTentaclesTargets[coord.y][coord.x] {
+			if coord.isValid() && s.isWalkable(coord) && !enemyTentaclesTargets[coord.y][coord.x] {
 				// check if there is an opponent organ in the direction of the offset
 				for _, dir := range []Dir{N, S, W, E} {
 					attackedCoord := coord.add(offsets[dir])
-					if attackedCoord.isValid() && state.Grid[attackedCoord.y][attackedCoord.x] != nil {
-						attacked := state.Grid[attackedCoord.y][attackedCoord.x]
+					if attackedCoord.isValid() && s.Grid[attackedCoord.y][attackedCoord.x] != nil {
+						attacked := s.Grid[attackedCoord.y][attackedCoord.x]
 						if attacked.owner == OPPONENT {
 
-							destroyed := findDestroyed(state, *attacked)
+							destroyed := findDestroyed(s, *attacked)
 
 							attacks = append(attacks, TentacleGrowPlan{
 								organ:          organ,
@@ -1359,11 +1357,11 @@ func findDestroyed(s State, attacked Entity) []Entity {
 	return destroyed
 }
 
-func growToFrontier(organs []Entity, enemyTentaclesTargets [][]bool) {
+func growToFrontier(s State, organs []Entity, enemyTentaclesTargets [][]bool) {
 	// there is no protein on the grid, find a cell that is at the frontier of players' organisms
 
 	var enemyOrgans []Entity
-	for _, entity := range state.Entities {
+	for _, entity := range s.Entities {
 		if entity.owner == OPPONENT {
 			enemyOrgans = append(enemyOrgans, entity)
 		}
@@ -1376,9 +1374,9 @@ func growToFrontier(organs []Entity, enemyTentaclesTargets [][]bool) {
 	var bestOfEnemyOrgans Entity
 	bestScore := -1000
 
-	for i := 0; i < state.Height; i++ {
-		for j := 0; j < state.Width; j++ {
-			if state.Grid[i][j] == nil && !enemyTentaclesTargets[i][j] {
+	for i := 0; i < s.Height; i++ {
+		for j := 0; j < s.Width; j++ {
+			if s.Grid[i][j] == nil && !enemyTentaclesTargets[i][j] {
 				cell := Coord{j, i}
 
 				// find the closest of my organs
@@ -1423,7 +1421,7 @@ func growToFrontier(organs []Entity, enemyTentaclesTargets [][]bool) {
 	if bestCell == (Coord{-1, -1}) {
 		fmt.Println("WAIT no cell")
 	} else {
-		growType := findGrowType()
+		growType := findGrowType(s)
 
 		debug("Grow target cell: %+v from organ: %+v and enemy organ: %+v\n", bestCell, bestOfMyOrgans, bestOfEnemyOrgans)
 
@@ -1437,24 +1435,24 @@ func growToFrontier(organs []Entity, enemyTentaclesTargets [][]bool) {
 	}
 }
 
-func buildSporeCellsMap(nonHarvestedProteins []Entity) [][]bool {
-	sporeCells := make([][]bool, state.Height)
-	for i := 0; i < state.Height; i++ {
-		sporeCells[i] = make([]bool, state.Width)
+func buildSporeCellsMap(s State, nonHarvestedProteins []Entity) [][]bool {
+	sporeCells := make([][]bool, s.Height)
+	for i := 0; i < s.Height; i++ {
+		sporeCells[i] = make([]bool, s.Width)
 	}
 
 	for _, protein := range nonHarvestedProteins {
 		for _, offset := range offsets {
 			coord := protein.coord.add(offset)
-			if coord.isValid() && state.Grid[coord.y][coord.x] == nil {
+			if coord.isValid() && s.Grid[coord.y][coord.x] == nil {
 				sporeCells[coord.y][coord.x] = true
 			}
 		}
 	}
 
 	// debug("Spore cells:\n")
-	// for i := 0; i < state.Height; i++ {
-	// 	for j := 0; j < state.Width; j++ {
+	// for i := 0; i < globalState.Height; i++ {
+	// 	for j := 0; j < globalState.Width; j++ {
 	// 		if sporeCells[i][j] {
 	// 			fmt.Fprintf(os.Stderr, "X ")
 	// 		} else {
@@ -1515,16 +1513,16 @@ func findHarvestedProteins(s State) ([]Entity, []Entity) {
 	return harvestedProteins, nonHarvestedProteins
 }
 
-func findGrowType() EntityType {
+func findGrowType(s State) EntityType {
 	// grow a tentacle if I have enough proteins, better for attack and defense
-	if state.MyProteins[1] >= 10 && state.MyProteins[2] >= 10 {
+	if s.MyProteins[1] >= 10 && s.MyProteins[2] >= 10 {
 		return TENTACLE
 	}
 
 	growType := EntityType(-1)
 
 	for _, _type := range []EntityType{BASIC, HARVESTER, TENTACLE, SPORER} {
-		if canGrow(state.MyProteins, _type) {
+		if canGrow(s.MyProteins, _type) {
 			return _type
 		}
 	}
@@ -1606,26 +1604,26 @@ func findShortestPath(s State, from, to []Coord, forbiddenCells [][]bool) []Coor
 	return nil
 }
 
-func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTentaclesTargets [][]bool, shortestPath []Coord) {
+func growTowardsProtein(s State, nonHarvestedProteins []Entity, organs []Entity, enemyTentaclesTargets [][]bool, shortestPath []Coord) {
 	// find the closest protein and organ
 
 	if len(shortestPath) > 1 {
 		// use the shortest path to grow towards the closest protein
 		fromCell := shortestPath[0]
-		fromEntity := state.Grid[fromCell.y][fromCell.x]
+		fromEntity := s.Grid[fromCell.y][fromCell.x]
 
 		stepCell := shortestPath[1]
 
 		toCell := shortestPath[len(shortestPath)-1]
-		// toEntity := state.Entities[state.Grid[toCell.y][toCell.x]]
+		// toEntity := globalState.Entities[s.Grid[toCell.y][toCell.x]]
 
 		debug("Path from cell: %+v, to cell: %+v via step cell: %+v\n", fromCell, toCell, stepCell)
 
-		if distance(stepCell, toCell) == 1 && canGrow(state.MyProteins, HARVESTER) {
+		if distance(stepCell, toCell) == 1 && canGrow(s.MyProteins, HARVESTER) {
 			harvesterDir := findDirRelativeTo(stepCell, toCell)
 			fmt.Printf("GROW %d %d %d HARVESTER %s path_harv_prot\n", fromEntity.organId, stepCell.x, stepCell.y, showDir(harvesterDir))
 		} else {
-			growType := findGrowType()
+			growType := findGrowType(s)
 
 			growDir := N
 
@@ -1646,7 +1644,7 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTen
 		debug("Closest protein: %+v\n from organ: %+v\n", closestProtein, closestOrgan)
 
 		// find the closest neighbor of the closest protein that can be reached by the closest organ
-		closestNeighbor, closestOrgan := findClosestNeighborToProtein(closestProtein, organs, enemyTentaclesTargets)
+		closestNeighbor, closestOrgan := findClosestNeighborToProtein(s, closestProtein, organs, enemyTentaclesTargets)
 
 		if closestNeighbor == (Coord{-1, -1}) {
 			debug("No neighbor found for protein: %+v\n", closestProtein)
@@ -1654,11 +1652,11 @@ func growTowardsProtein(nonHarvestedProteins []Entity, organs []Entity, enemyTen
 		} else {
 			debug("Closest neighbor: %+v\n", closestNeighbor)
 
-			if distance(closestNeighbor, closestProtein.coord) == 1 && canGrow(state.MyProteins, HARVESTER) {
+			if distance(closestNeighbor, closestProtein.coord) == 1 && canGrow(s.MyProteins, HARVESTER) {
 				harvesterDir := findDirRelativeTo(closestNeighbor, closestProtein.coord)
 				fmt.Printf("GROW %d %d %d HARVESTER %s harv_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showDir(harvesterDir))
 			} else {
-				growType := findGrowType()
+				growType := findGrowType(s)
 
 				growDir := findApproximateDir(closestNeighbor, closestProtein.coord)
 
@@ -1691,7 +1689,7 @@ func findClosestProteinAndOrgan(nonHarvestedProteins []Entity, organs []Entity) 
 	return closestProtein, closestOrgan
 }
 
-func findClosestNeighborToProtein(protein Entity, organs []Entity, enemyTentaclesTargets [][]bool) (Coord, Entity) {
+func findClosestNeighborToProtein(s State, protein Entity, organs []Entity, enemyTentaclesTargets [][]bool) (Coord, Entity) {
 	var closestNeighbor Coord = Coord{-1, -1}
 	var closestOrgan Entity
 	minDistance := 1000
@@ -1700,7 +1698,7 @@ func findClosestNeighborToProtein(protein Entity, organs []Entity, enemyTentacle
 		for _, offset := range offsets {
 			neighbor := organ.coord.add(offset)
 			if neighbor.isValid() &&
-				state.isWalkable(neighbor) &&
+				s.isWalkable(neighbor) &&
 				!enemyTentaclesTargets[neighbor.y][neighbor.x] {
 				dist := distance(neighbor, protein.coord)
 				if dist < minDistance {
@@ -1715,8 +1713,8 @@ func findClosestNeighborToProtein(protein Entity, organs []Entity, enemyTentacle
 	return closestNeighbor, closestOrgan
 }
 
-func growSporerIfPossible(sporeCells [][]bool, organs []Entity) bool {
-	if canGrow(state.MyProteins, SPORER) {
+func growSporerIfPossible(s State, sporeCells [][]bool, organs []Entity) bool {
+	if canGrow(s.MyProteins, SPORER) {
 		// check if the closest organ can reach the closest protein using sporers
 
 		debug("Can grow a sporer\n")
@@ -1728,10 +1726,10 @@ func growSporerIfPossible(sporeCells [][]bool, organs []Entity) bool {
 		for _, organ := range organs {
 			for _, offset := range offsets {
 				sporerCoord := organ.coord.add(offset)
-				if sporerCoord.isValid() && state.Grid[sporerCoord.y][sporerCoord.x] == nil {
+				if sporerCoord.isValid() && s.Grid[sporerCoord.y][sporerCoord.x] == nil {
 					// simulate the spore in all directions until it reaches a spore cell
 					for _, dir := range []Dir{N, S, W, E} {
-						sporeCoord := findSporeCellInDirection(sporerCoord, dir, sporeCells)
+						sporeCoord := findSporeCellInDirection(s, sporerCoord, dir, sporeCells)
 
 						if sporeCoord.isValid() &&
 							distance(sporerCoord, sporeCoord) > 5 {
@@ -1768,14 +1766,14 @@ func growSporerIfPossible(sporeCells [][]bool, organs []Entity) bool {
 	return false
 }
 
-func sporeIfPossible(sporeCells [][]bool) bool {
-	if canSpore(state.MyProteins) {
+func sporeIfPossible(s State, sporeCells [][]bool) bool {
+	if canSpore(s.MyProteins) {
 		// check if I have a sporer that can spore a new root into a spore cell
 		sporer := Entity{}
 		sporeCoord := Coord{-1, -1}
-		for _, entity := range state.Entities {
+		for _, entity := range s.Entities {
 			if entity._type == SPORER && entity.owner == ME {
-				sporeCooord := findSporeCellInDirection(entity.coord, entity.organDir, sporeCells)
+				sporeCooord := findSporeCellInDirection(s, entity.coord, entity.organDir, sporeCells)
 				if sporeCooord.isValid() {
 					sporer = entity
 					sporeCoord = sporeCooord
@@ -1798,7 +1796,7 @@ func canSpore(proteinCounts []int) bool {
 	return proteinCounts[0] >= 1 && proteinCounts[1] >= 1 && proteinCounts[2] >= 1 && proteinCounts[3] >= 1
 }
 
-func findSporeCellInDirection(coord Coord, dir Dir, sporeCells [][]bool) Coord {
+func findSporeCellInDirection(s State, coord Coord, dir Dir, sporeCells [][]bool) Coord {
 	sporeCoord := coord
 	for {
 		sporeCoord = sporeCoord.add(offsets[dir])
@@ -1806,8 +1804,8 @@ func findSporeCellInDirection(coord Coord, dir Dir, sporeCells [][]bool) Coord {
 			break
 		}
 
-		if state.Grid[sporeCoord.y][sporeCoord.x] != nil &&
-			!(state.Grid[sporeCoord.y][sporeCoord.x]._type.isProtein()) {
+		if s.Grid[sporeCoord.y][sporeCoord.x] != nil &&
+			!(s.Grid[sporeCoord.y][sporeCoord.x]._type.isProtein()) {
 			break
 		}
 
@@ -1822,7 +1820,7 @@ func findSporeCellInDirection(coord Coord, dir Dir, sporeCells [][]bool) Coord {
 func main() {
 	// width: columns in the game grid
 	// height: rows in the game grid
-	fmt.Scan(&state.Width, &state.Height)
+	fmt.Scan(&globalState.Width, &globalState.Height)
 
 	for {
 		parseTurnState()
