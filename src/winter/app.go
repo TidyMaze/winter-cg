@@ -845,14 +845,20 @@ func scoreState(s State) (float64, string) {
 	enemyTentaclesTargets := findEnemyTentaclesTargets(s)
 
 	// find the distance from any of my organs to the closest non-harvested protein (malus for being far)
-	distanceClosestProtein := len(findShortestPathProt(s, myOrgans, nonHarvested, enemyTentaclesTargets))
+	path := findShortestPathProt(s, myOrgans, nonHarvested, enemyTentaclesTargets)
+	distanceClosestProtein := len(path)
+
+	pathStr := ""
+	for _, coord := range path {
+		pathStr += fmt.Sprintf("%+v, ", coord)
+	}
 
 	// better to have more proteins left (do not waste them to move)
 	proteinScore := s.MyProteins[0] + s.MyProteins[1] + s.MyProteins[2] + s.MyProteins[3]
 
-	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, my organs: %d, enemy organs: %d, distance to closest protein: %d, protein score: %d\n", len(harvested), len(nonHarvested), len(myOrgans), len(enemyOrgans), distanceClosestProtein, proteinScore)
+	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, my organs: %d, enemy organs: %d, distance to closest protein: %d (%s), protein score: %d\n", len(harvested), len(nonHarvested), len(myOrgans), len(enemyOrgans), distanceClosestProtein, pathStr, proteinScore)
 
-	return float64(len(harvested)*10 + len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein*10 + proteinScore), detailScore
+	return float64(len(harvested)*10 + len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein + proteinScore), detailScore
 }
 
 // my organs (any root)
