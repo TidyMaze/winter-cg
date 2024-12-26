@@ -852,7 +852,7 @@ func scoreState(s State) (float64, string) {
 
 	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, my organs: %d, enemy organs: %d, distance to closest protein: %d, protein score: %d\n", len(harvested), len(nonHarvested), len(myOrgans), len(enemyOrgans), distanceClosestProtein, proteinScore)
 
-	return float64(len(harvested)*10 + len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein + proteinScore), detailScore
+	return float64(len(harvested)*10 + len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein*10 + proteinScore), detailScore
 }
 
 // my organs (any root)
