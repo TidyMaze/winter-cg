@@ -802,9 +802,13 @@ func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) Pl
 
 		debug("Protein map:\n%s", showProteinMap(proteinMap))
 
+		disputedCellsMap := findDisputedCells(s)
+
+		debug("Disputed cells map:\n%s", showDisputedCellsMap(disputedCellsMap))
+
 		for _, actions := range combinations {
 			//debug("%d actions for comb (%d), ", len(actions), iComb)
-			score, detail := scoreActions(globalState, actions, proteinMap)
+			score, detail := scoreActions(globalState, actions, proteinMap, disputedCellsMap)
 
 			playerActions = append(playerActions, PlayerActions{
 				actions: actions,
@@ -854,6 +858,21 @@ func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) Pl
 	return allActionsCombinations[0]
 }
 
+func showDisputedCellsMap(cellsMap [][]bool) interface{} {
+	str := ""
+	for i := 0; i < globalState.Height; i++ {
+		for j := 0; j < globalState.Width; j++ {
+			if cellsMap[i][j] {
+				str += "X "
+			} else {
+				str += ". "
+			}
+		}
+		str += "\n"
+	}
+	return str
+}
+
 func showProteinMap(proteinMap [][]int) string {
 	str := ""
 	for i := 0; i < globalState.Height; i++ {
@@ -866,13 +885,13 @@ func showProteinMap(proteinMap [][]int) string {
 
 }
 
-func scoreActions(s State, actions []Action, proteinMap [][]int) (float64, string) {
+func scoreActions(s State, actions []Action, proteinMap [][]int, disputedCellsMap [][]bool) (float64, string) {
 	newState := applyActions(s, actions)
 
-	return scoreState(newState, proteinMap)
+	return scoreState(newState, proteinMap, disputedCellsMap)
 }
 
-func scoreState(s State, proteinsMap [][]int) (float64, string) {
+func scoreState(s State, proteinsMap [][]int, disputedCellsMap [][]bool) (float64, string) {
 	// score is the number of harvested proteins plus the number of organs
 	harvested, nonHarvested := findHarvestedProteins(s)
 
@@ -910,11 +929,32 @@ func scoreState(s State, proteinsMap [][]int) (float64, string) {
 
 	avgDistance := float64(totalDistance) / float64(organCount)
 
+	defendedDisputedCells := findDefendedDisputedCells(s, disputedCellsMap)
+
 	//detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, my organs: %d, enemy organs: %d, distance to closest protein: %d (%s), protein score: %d\n", len(harvested), len(nonHarvested), len(myOrgans), len(enemyOrgans), distanceClosestProtein, pathStr, proteinScore)
-	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %d, avgDistance: %f\n, my organs: %d, enemy organs: %d, protein score: %d\n", len(harvested), len(nonHarvested), totalDistance, avgDistance, len(myOrgans), len(enemyOrgans), proteinScore)
+	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %d, avgDistance: %f\n, my organs: %d, enemy organs: %d, protein score: %d\n, defended cells: %d", len(harvested), len(nonHarvested), totalDistance, avgDistance, len(myOrgans), len(enemyOrgans), proteinScore, len(defendedDisputedCells))
 
 	//return float64(len(harvested)*100 - len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein*10 + proteinScore), detailScore
-	return float64(len(harvested)*1000) - float64(len(nonHarvested)*10) - avgDistance + float64(len(myOrgans)*10000) - float64(len(enemyOrgans)*10000) + float64(proteinScore), detailScore
+	return float64(len(harvested)*1000) - float64(len(nonHarvested)*10) - avgDistance + float64(len(myOrgans)*10000) - float64(len(enemyOrgans)*10000) + float64(proteinScore) + float64(len(defendedDisputedCells))*100, detailScore
+}
+
+func findDefendedDisputedCells(s State, disputedCellsMap [][]bool) []Coord {
+	cells := make([]Coord, 0)
+
+	for _, entity := range s.Entities {
+		if entity.owner == ME && entity._type == TENTACLE {
+			// find the target of the tentacle
+			target := entity.coord.add(offsets[entity.organDir])
+
+			if target.isValid() {
+				if disputedCellsMap[target.y][target.x] {
+					cells = append(cells, target)
+				}
+			}
+		}
+	}
+
+	return cells
 }
 
 func findProteins(s State) []Entity {
@@ -1162,6 +1202,80 @@ func copyState(s State) State {
 	newState.OppProteins[3] = s.OppProteins[3]
 
 	return newState
+}
+
+func emptyMapBool(height, width int) [][]bool {
+	m := make([][]bool, height)
+	for i := 0; i < height; i++ {
+		m[i] = make([]bool, width)
+		for j := 0; j < width; j++ {
+			m[i][j] = false
+		}
+	}
+	return m
+}
+
+/*
+*
+Find all the empty cells that are:
+- less than 2 cells away from player (path length <= 3)
+- less than 2 cells away from enemy (path length <= 3)
+*/
+func findDisputedCells(s State) [][]bool {
+	disputedCells := make([][]bool, s.Height)
+
+	for i := 0; i < s.Height; i++ {
+		disputedCells[i] = make([]bool, s.Width)
+		for j := 0; j < s.Width; j++ {
+			disputedCells[i][j] = false
+		}
+	}
+
+	myOrgans := findOrgans(s, ME)
+	enemyOrgans := findOrgans(s, OPPONENT)
+
+	myOrgansCoords := make([]Coord, 0)
+	for _, organ := range myOrgans {
+		myOrgansCoords = append(myOrgansCoords, organ.coord)
+	}
+
+	enemyOrgansCoords := make([]Coord, 0)
+	for _, organ := range enemyOrgans {
+		enemyOrgansCoords = append(enemyOrgansCoords, organ.coord)
+	}
+
+	forbiddenCells := make([][]bool, s.Height)
+	for i := 0; i < s.Height; i++ {
+		forbiddenCells[i] = make([]bool, s.Width)
+		for j := 0; j < s.Width; j++ {
+			forbiddenCells[i][j] = false
+		}
+	}
+
+	// mark walls as forbidden
+	for _, entity := range s.Entities {
+		if entity._type == WALL {
+			forbiddenCells[entity.coord.y][entity.coord.x] = true
+		}
+	}
+
+	for i := 0; i < s.Height; i++ {
+		for j := 0; j < s.Width; j++ {
+			coord := Coord{j, i}
+
+			if s.isWalkable(coord, false) {
+				// find the distance from any of my organs to the cell
+				pathMy := findShortestPath(s, myOrgansCoords, []Coord{coord}, forbiddenCells)
+				pathEnemy := findShortestPath(s, enemyOrgansCoords, []Coord{coord}, forbiddenCells)
+
+				if len(pathMy) <= 3 && len(pathEnemy) <= 3 {
+					disputedCells[i][j] = true
+				}
+			}
+		}
+	}
+
+	return disputedCells
 }
 
 func findActionsForOrganism(s State, root Entity, organs []Entity, enemyTentaclesTargets [][]bool) []Action {
