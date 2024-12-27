@@ -796,9 +796,9 @@ func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) Pl
 		playerActions := make([]PlayerActions, 0)
 
 		// protein map is built from the current state (stable)
-		_, nonHarvested := findHarvestedProteins(s)
+		harvested, nonHarvested := findHarvestedProteins(s)
 
-		proteinMap := buildProteinMap(s, nonHarvested)
+		proteinMap := buildProteinMap(s, nonHarvested, harvested)
 
 		debug("Protein map:\n%s", showProteinMap(proteinMap))
 
@@ -1000,11 +1000,60 @@ func buildDistanceMapForProtein(s State, protein Coord) [][]int {
 	return distances
 }
 
+func computeTurnIncome(harvestedProteins []Entity) []float64 {
+	turnIncome := make([]float64, 4)
+
+	// calculate the income of the turn
+	for _, protein := range harvestedProteins {
+		turnIncome[protein._type-PROTEIN_A]++
+	}
+
+	debug("Turn income: %+v\n", turnIncome)
+
+	return turnIncome
+}
+
+/*
+*
+Normalize the array to have values between 0 and 1
+*/
+func normalizeArray(arr []float64) []float64 {
+	normalized := make([]float64, len(arr))
+
+	max := 0.0
+	min := 1000000000.0
+
+	for _, v := range arr {
+		if v > max {
+			max = v
+		}
+		if v < min {
+			min = v
+		}
+	}
+
+	if max == min {
+		return arr
+	}
+
+	for i, v := range arr {
+		normalized[i] = (v - min) / (max - min)
+	}
+
+	return normalized
+}
+
 /**
  * For each protein, build the grid of distances from each cell to the protein.
  * Then sum the distances for each cell (merge the grids).
  */
-func buildProteinMap(s State, proteins []Entity) [][]int {
+func buildProteinMap(s State, nonHarvestedProteins []Entity, harvestedProteins []Entity) [][]int {
+
+	turnIncome := computeTurnIncome(harvestedProteins)
+
+	normalizedTurnIncome := normalizeArray(turnIncome)
+
+	debug("Normalized turn income: %+v\n", normalizedTurnIncome)
 
 	finalMap := make([][]int, s.Height)
 
@@ -1015,13 +1064,13 @@ func buildProteinMap(s State, proteins []Entity) [][]int {
 		}
 	}
 
-	for _, protein := range proteins {
+	for _, protein := range nonHarvestedProteins {
 		singleProteinMap := buildDistanceMapForProtein(s, protein.coord)
 
 		// add the distances to the final map
 		for i := 0; i < s.Height; i++ {
 			for j := 0; j < s.Width; j++ {
-				finalMap[i][j] += singleProteinMap[i][j]
+				finalMap[i][j] += int(float64(singleProteinMap[i][j]) * normalizedTurnIncome[protein._type-PROTEIN_A])
 			}
 		}
 	}
