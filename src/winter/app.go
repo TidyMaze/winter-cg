@@ -778,9 +778,14 @@ func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) Pl
 		// calculate the score of state after applying all the actions
 		playerActions := make([]PlayerActions, 0)
 
+		// protein map is built from the current state (stable)
+		proteinMap := buildProteinMap(s, findProteins(s))
+
+		debug("Protein map:\n%s", showProteinMap(proteinMap))
+
 		for _, actions := range combinations {
 			//debug("%d actions for comb (%d), ", len(actions), iComb)
-			score, detail := scoreActions(globalState, actions)
+			score, detail := scoreActions(globalState, actions, proteinMap)
 
 			playerActions = append(playerActions, PlayerActions{
 				actions: actions,
@@ -830,35 +835,133 @@ func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) Pl
 	return allActionsCombinations[0]
 }
 
-func scoreActions(s State, actions []Action) (float64, string) {
-	newState := applyActions(s, actions)
-	return scoreState(newState)
+func showProteinMap(proteinMap [][]int) string {
+	str := ""
+	for i := 0; i < globalState.Height; i++ {
+		for j := 0; j < globalState.Width; j++ {
+			str += fmt.Sprintf("%d ", proteinMap[i][j])
+		}
+		str += "\n"
+	}
+	return str
+
 }
 
-func scoreState(s State) (float64, string) {
+func scoreActions(s State, actions []Action, proteinMap [][]int) (float64, string) {
+	newState := applyActions(s, actions)
+
+	return scoreState(newState, proteinMap)
+}
+
+func scoreState(s State, proteinsMap [][]int) (float64, string) {
 	// score is the number of harvested proteins plus the number of organs
 	harvested, nonHarvested := findHarvestedProteins(s)
 
 	myOrgans := findOrgans(s, ME)
-	enemyOrgans := findOrgans(s, OPPONENT)
+	//enemyOrgans := findOrgans(s, OPPONENT)
 
-	enemyTentaclesTargets := findEnemyTentaclesTargets(s)
+	//enemyTentaclesTargets := findEnemyTentaclesTargets(s)
 
 	// find the distance from any of my organs to the closest non-harvested protein (malus for being far)
-	path := findShortestPathProt(s, myOrgans, nonHarvested, enemyTentaclesTargets)
-	distanceClosestProtein := len(path)
+	//path := findShortestPathProt(s, myOrgans, nonHarvested, enemyTentaclesTargets)
+	//distanceClosestProtein := len(path)
 
-	pathStr := ""
-	for _, coord := range path {
-		pathStr += fmt.Sprintf("%+v, ", coord)
+	// for each of my organs, sum the protein map distance value
+	totalDistance := 0
+	organCount := 0
+
+	for _, organ := range myOrgans {
+		totalDistance += proteinsMap[organ.coord.y][organ.coord.x]
+		organCount++
 	}
 
+	//pathStr := ""
+	//for _, coord := range path {
+	//	pathStr += fmt.Sprintf("%+v, ", coord)
+	//}
+
 	// better to have more proteins left (do not waste them to move)
-	proteinScore := s.MyProteins[0] + s.MyProteins[1] + s.MyProteins[2] + s.MyProteins[3]
+	//proteinScore := s.MyProteins[0] + s.MyProteins[1] + s.MyProteins[2] + s.MyProteins[3]
 
-	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, my organs: %d, enemy organs: %d, distance to closest protein: %d (%s), protein score: %d\n", len(harvested), len(nonHarvested), len(myOrgans), len(enemyOrgans), distanceClosestProtein, pathStr, proteinScore)
+	avgDistance := float64(totalDistance) / float64(organCount)
 
-	return float64(len(harvested)*100 + len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein*10 + proteinScore), detailScore
+	//detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, my organs: %d, enemy organs: %d, distance to closest protein: %d (%s), protein score: %d\n", len(harvested), len(nonHarvested), len(myOrgans), len(enemyOrgans), distanceClosestProtein, pathStr, proteinScore)
+	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %d, avgDistance: %f\n", len(harvested), len(nonHarvested), totalDistance, avgDistance)
+
+	//return float64(len(harvested)*100 - len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein*10 + proteinScore), detailScore
+	return float64(len(harvested)*1000) - float64(len(nonHarvested)*10) - avgDistance, detailScore
+}
+
+func findProteins(s State) []Entity {
+	proteins := make([]Entity, 0)
+	for _, entity := range s.Entities {
+		if entity._type.isProtein() {
+			proteins = append(proteins, entity)
+		}
+	}
+	return proteins
+}
+
+func buildDistanceMapForProtein(s State, protein Coord) [][]int {
+	// build the grid of distances from the protein
+	distances := make([][]int, s.Height)
+
+	for i := 0; i < s.Height; i++ {
+		distances[i] = make([]int, s.Width)
+		for j := 0; j < s.Width; j++ {
+			distances[i][j] = -1
+		}
+	}
+
+	distances[protein.y][protein.x] = 0
+
+	queue := make([]Coord, 0)
+	queue = append(queue, protein)
+
+	for len(queue) > 0 {
+		coord := queue[0]
+		queue = queue[1:]
+
+		for _, offset := range offsets {
+			neighbor := coord.add(offset)
+
+			if neighbor.isValid() && s.isWalkable(neighbor) && distances[neighbor.y][neighbor.x] == -1 {
+				distances[neighbor.y][neighbor.x] = distances[coord.y][coord.x] + 1
+				queue = append(queue, neighbor)
+			}
+		}
+	}
+
+	return distances
+}
+
+/**
+ * For each protein, build the grid of distances from each cell to the protein.
+ * Then sum the distances for each cell (merge the grids).
+ */
+func buildProteinMap(s State, proteins []Entity) [][]int {
+
+	finalMap := make([][]int, s.Height)
+
+	for i := 0; i < s.Height; i++ {
+		finalMap[i] = make([]int, s.Width)
+		for j := 0; j < s.Width; j++ {
+			finalMap[i][j] = 0
+		}
+	}
+
+	for _, protein := range proteins {
+		singleProteinMap := buildDistanceMapForProtein(s, protein.coord)
+
+		// add the distances to the final map
+		for i := 0; i < s.Height; i++ {
+			for j := 0; j < s.Width; j++ {
+				finalMap[i][j] += singleProteinMap[i][j]
+			}
+		}
+	}
+
+	return finalMap
 }
 
 // my organs (any root)
