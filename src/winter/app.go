@@ -906,7 +906,7 @@ func scoreState(s State, proteinsMap [][]int) (float64, string) {
 	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %d, avgDistance: %f\n, my organs: %d, enemy organs: %d, protein score: %d\n", len(harvested), len(nonHarvested), totalDistance, avgDistance, len(myOrgans), len(enemyOrgans), proteinScore)
 
 	//return float64(len(harvested)*100 - len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein*10 + proteinScore), detailScore
-	return float64(len(harvested)*1000) - float64(len(nonHarvested)*10) - avgDistance + float64(len(myOrgans)*100) - float64(len(enemyOrgans)*100) + float64(proteinScore), detailScore
+	return float64(len(harvested)*1000) - float64(len(nonHarvested)*10) - avgDistance + float64(len(myOrgans)*10000) - float64(len(enemyOrgans)*10000) + float64(proteinScore), detailScore
 }
 
 func findProteins(s State) []Entity {
