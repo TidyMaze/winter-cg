@@ -796,7 +796,9 @@ func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) Pl
 		playerActions := make([]PlayerActions, 0)
 
 		// protein map is built from the current state (stable)
-		proteinMap := buildProteinMap(s, findProteins(s))
+		_, nonHarvested := findHarvestedProteins(s)
+
+		proteinMap := buildProteinMap(s, nonHarvested)
 
 		debug("Protein map:\n%s", showProteinMap(proteinMap))
 
