@@ -935,7 +935,7 @@ func scoreState(s State, proteinsMap [][]int, disputedCellsMap [][]bool) (float6
 	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %d, avgDistance: %f\n, my organs: %d, enemy organs: %d, protein score: %d\n, defended cells: %d", len(harvested), len(nonHarvested), totalDistance, avgDistance, len(myOrgans), len(enemyOrgans), proteinScore, len(defendedDisputedCells))
 
 	//return float64(len(harvested)*100 - len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein*10 + proteinScore), detailScore
-	return float64(len(harvested)*1000) - float64(len(nonHarvested)*10) - avgDistance + float64(len(myOrgans)*10000) - float64(len(enemyOrgans)*10000) + float64(proteinScore) + float64(len(defendedDisputedCells))*100, detailScore
+	return float64(len(harvested)*1000) - float64(len(nonHarvested)*10) - avgDistance + float64(len(myOrgans)*10000) - float64(len(enemyOrgans)*10000) + float64(proteinScore) + float64(len(defendedDisputedCells))*1000, detailScore
 }
 
 func findDefendedDisputedCells(s State, disputedCellsMap [][]bool) []Coord {
