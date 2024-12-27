@@ -902,6 +902,12 @@ func scoreState(s State, proteinsMap [][]int) (float64, string) {
 	// better to have more proteins left (do not waste them to move)
 	proteinScore := s.MyProteins[0] + s.MyProteins[1] + s.MyProteins[2] + s.MyProteins[3]
 
+	for iProt := 0; iProt < 4; iProt++ {
+		if s.MyProteins[iProt] <= 0 {
+			proteinScore -= 1000
+		}
+	}
+
 	avgDistance := float64(totalDistance) / float64(organCount)
 
 	//detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, my organs: %d, enemy organs: %d, distance to closest protein: %d (%s), protein score: %d\n", len(harvested), len(nonHarvested), len(myOrgans), len(enemyOrgans), distanceClosestProtein, pathStr, proteinScore)
