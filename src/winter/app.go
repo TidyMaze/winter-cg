@@ -364,8 +364,25 @@ type State struct {
 	RequiredActionsCount int
 }
 
-func (s State) isWalkable(coord Coord) bool {
-	return globalState.Grid[coord.y][coord.x] == nil || globalState.Grid[coord.y][coord.x]._type.isProtein()
+func (s State) isWalkable(coord Coord, allowOrgans bool) bool {
+
+	walkableEntity := false
+	if allowOrgans {
+		entity := s.Grid[coord.y][coord.x]
+
+		if entity != nil {
+			walkableEntity = entity._type.isProtein() ||
+				entity._type == ROOT ||
+				entity._type == BASIC ||
+				entity._type == HARVESTER ||
+				entity._type == TENTACLE ||
+				entity._type == SPORER
+		}
+	} else {
+		walkableEntity = globalState.Grid[coord.y][coord.x] == nil || globalState.Grid[coord.y][coord.x]._type.isProtein()
+	}
+
+	return globalState.Grid[coord.y][coord.x] == nil || walkableEntity
 }
 
 var globalState State
@@ -925,7 +942,7 @@ func buildDistanceMapForProtein(s State, protein Coord) [][]int {
 		for _, offset := range offsets {
 			neighbor := coord.add(offset)
 
-			if neighbor.isValid() && s.isWalkable(neighbor) && distances[neighbor.y][neighbor.x] == -1 {
+			if neighbor.isValid() && s.isWalkable(neighbor, true) && distances[neighbor.y][neighbor.x] == -1 {
 				distances[neighbor.y][neighbor.x] = distances[coord.y][coord.x] + 1
 				queue = append(queue, neighbor)
 			}
@@ -1185,7 +1202,7 @@ func findGrowActions(s State, root, organ Entity, enemyTentaclesTargets [][]bool
 	// find all the possible grow actions for the organ
 	for _, offset := range offsets {
 		coord := organ.coord.add(offset)
-		if coord.isValid() && s.isWalkable(coord) && !enemyTentaclesTargets[coord.y][coord.x] {
+		if coord.isValid() && s.isWalkable(coord, false) && !enemyTentaclesTargets[coord.y][coord.x] {
 			for _, _type := range []EntityType{BASIC, HARVESTER, TENTACLE, SPORER} {
 
 				if _type == BASIC && canGrow(s.MyProteins, BASIC) {
@@ -1368,7 +1385,7 @@ func findShortestPathProt(s State, organs []Entity, nonHarvestedProteins []Entit
 	// block the cells that are not walkable
 	for i := 0; i < s.Height; i++ {
 		for j := 0; j < s.Width; j++ {
-			if !s.isWalkable(Coord{j, i}) {
+			if !s.isWalkable(Coord{j, i}, false) {
 				blockedCoords[i][j] = true
 			}
 		}
@@ -1415,7 +1432,7 @@ func findTentacleAttacks(s State, organs []Entity, enemyTentaclesTargets [][]boo
 	for _, organ := range organs {
 		for _, offset := range offsets {
 			coord := organ.coord.add(offset)
-			if coord.isValid() && s.isWalkable(coord) && !enemyTentaclesTargets[coord.y][coord.x] {
+			if coord.isValid() && s.isWalkable(coord, false) && !enemyTentaclesTargets[coord.y][coord.x] {
 				// check if there is an opponent organ in the direction of the offset
 				for _, dir := range []Dir{N, S, W, E} {
 					attackedCoord := coord.add(offsets[dir])
@@ -1818,7 +1835,7 @@ func findClosestNeighborToProtein(s State, protein Entity, organs []Entity, enem
 		for _, offset := range offsets {
 			neighbor := organ.coord.add(offset)
 			if neighbor.isValid() &&
-				s.isWalkable(neighbor) &&
+				s.isWalkable(neighbor, false) &&
 				!enemyTentaclesTargets[neighbor.y][neighbor.x] {
 				dist := distance(neighbor, protein.coord)
 				if dist < minDistance {
