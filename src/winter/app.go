@@ -1070,7 +1070,7 @@ func buildProteinMap(s State, nonHarvestedProteins []Entity, harvestedProteins [
 		// add the distances to the final map
 		for i := 0; i < s.Height; i++ {
 			for j := 0; j < s.Width; j++ {
-				finalMap[i][j] += float64(singleProteinMap[i][j]) * normalizedTurnIncome[protein._type-PROTEIN_A]
+				finalMap[i][j] += float64(singleProteinMap[i][j]) * (1 + normalizedTurnIncome[protein._type-PROTEIN_A])
 			}
 		}
 	}
