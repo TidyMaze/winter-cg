@@ -873,11 +873,11 @@ func showDisputedCellsMap(cellsMap [][]bool) interface{} {
 	return str
 }
 
-func showProteinMap(proteinMap [][]int) string {
+func showProteinMap(proteinMap [][]float64) string {
 	str := ""
 	for i := 0; i < globalState.Height; i++ {
 		for j := 0; j < globalState.Width; j++ {
-			str += fmt.Sprintf("%d ", proteinMap[i][j])
+			str += fmt.Sprintf("%d ", int(proteinMap[i][j]))
 		}
 		str += "\n"
 	}
@@ -885,13 +885,13 @@ func showProteinMap(proteinMap [][]int) string {
 
 }
 
-func scoreActions(s State, actions []Action, proteinMap [][]int, disputedCellsMap [][]bool) (float64, string) {
+func scoreActions(s State, actions []Action, proteinMap [][]float64, disputedCellsMap [][]bool) (float64, string) {
 	newState := applyActions(s, actions)
 
 	return scoreState(newState, proteinMap, disputedCellsMap)
 }
 
-func scoreState(s State, proteinsMap [][]int, disputedCellsMap [][]bool) (float64, string) {
+func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (float64, string) {
 	// score is the number of harvested proteins plus the number of organs
 	harvested, nonHarvested := findHarvestedProteins(s)
 
@@ -905,7 +905,7 @@ func scoreState(s State, proteinsMap [][]int, disputedCellsMap [][]bool) (float6
 	//distanceClosestProtein := len(path)
 
 	// for each of my organs, sum the protein map distance value
-	totalDistance := 0
+	totalDistance := 0.0
 	organCount := 0
 
 	for _, organ := range myOrgans {
@@ -927,12 +927,12 @@ func scoreState(s State, proteinsMap [][]int, disputedCellsMap [][]bool) (float6
 		}
 	}
 
-	avgDistance := float64(totalDistance) / float64(organCount)
+	avgDistance := totalDistance / float64(organCount)
 
 	defendedDisputedCells := findDefendedDisputedCells(s, disputedCellsMap)
 
 	//detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, my organs: %d, enemy organs: %d, distance to closest protein: %d (%s), protein score: %d\n", len(harvested), len(nonHarvested), len(myOrgans), len(enemyOrgans), distanceClosestProtein, pathStr, proteinScore)
-	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %d, avgDistance: %f\n, my organs: %d, enemy organs: %d, protein score: %d\n, defended cells: %d", len(harvested), len(nonHarvested), totalDistance, avgDistance, len(myOrgans), len(enemyOrgans), proteinScore, len(defendedDisputedCells))
+	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %f, avgDistance: %f\n, my organs: %d, enemy organs: %d, protein score: %d\n, defended cells: %d", len(harvested), len(nonHarvested), totalDistance, avgDistance, len(myOrgans), len(enemyOrgans), proteinScore, len(defendedDisputedCells))
 
 	//return float64(len(harvested)*100 - len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein*10 + proteinScore), detailScore
 	return float64(len(harvested)*1000) - float64(len(nonHarvested)*10) - avgDistance + float64(len(myOrgans)*10000) - float64(len(enemyOrgans)*10000) + float64(proteinScore) + float64(len(defendedDisputedCells))*100, detailScore
@@ -1047,7 +1047,7 @@ func normalizeArray(arr []float64) []float64 {
  * For each protein, build the grid of distances from each cell to the protein.
  * Then sum the distances for each cell (merge the grids).
  */
-func buildProteinMap(s State, nonHarvestedProteins []Entity, harvestedProteins []Entity) [][]int {
+func buildProteinMap(s State, nonHarvestedProteins []Entity, harvestedProteins []Entity) [][]float64 {
 
 	turnIncome := computeTurnIncome(harvestedProteins)
 
@@ -1055,10 +1055,10 @@ func buildProteinMap(s State, nonHarvestedProteins []Entity, harvestedProteins [
 
 	debug("Normalized turn income: %+v\n", normalizedTurnIncome)
 
-	finalMap := make([][]int, s.Height)
+	finalMap := make([][]float64, s.Height)
 
 	for i := 0; i < s.Height; i++ {
-		finalMap[i] = make([]int, s.Width)
+		finalMap[i] = make([]float64, s.Width)
 		for j := 0; j < s.Width; j++ {
 			finalMap[i][j] = 0
 		}
@@ -1070,7 +1070,7 @@ func buildProteinMap(s State, nonHarvestedProteins []Entity, harvestedProteins [
 		// add the distances to the final map
 		for i := 0; i < s.Height; i++ {
 			for j := 0; j < s.Width; j++ {
-				finalMap[i][j] += int(float64(singleProteinMap[i][j]) * normalizedTurnIncome[protein._type-PROTEIN_A])
+				finalMap[i][j] += float64(singleProteinMap[i][j]) * normalizedTurnIncome[protein._type-PROTEIN_A]
 			}
 		}
 	}
