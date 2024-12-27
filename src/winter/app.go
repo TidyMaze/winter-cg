@@ -875,7 +875,7 @@ func scoreState(s State, proteinsMap [][]int) (float64, string) {
 	harvested, nonHarvested := findHarvestedProteins(s)
 
 	myOrgans := findOrgans(s, ME)
-	//enemyOrgans := findOrgans(s, OPPONENT)
+	enemyOrgans := findOrgans(s, OPPONENT)
 
 	//enemyTentaclesTargets := findEnemyTentaclesTargets(s)
 
@@ -898,15 +898,15 @@ func scoreState(s State, proteinsMap [][]int) (float64, string) {
 	//}
 
 	// better to have more proteins left (do not waste them to move)
-	//proteinScore := s.MyProteins[0] + s.MyProteins[1] + s.MyProteins[2] + s.MyProteins[3]
+	proteinScore := s.MyProteins[0] + s.MyProteins[1] + s.MyProteins[2] + s.MyProteins[3]
 
 	avgDistance := float64(totalDistance) / float64(organCount)
 
 	//detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, my organs: %d, enemy organs: %d, distance to closest protein: %d (%s), protein score: %d\n", len(harvested), len(nonHarvested), len(myOrgans), len(enemyOrgans), distanceClosestProtein, pathStr, proteinScore)
-	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %d, avgDistance: %f\n", len(harvested), len(nonHarvested), totalDistance, avgDistance)
+	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %d, avgDistance: %f\n, my organs: %d, enemy organs: %d, protein score: %d\n", len(harvested), len(nonHarvested), totalDistance, avgDistance, len(myOrgans), len(enemyOrgans), proteinScore)
 
 	//return float64(len(harvested)*100 - len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein*10 + proteinScore), detailScore
-	return float64(len(harvested)*1000) - float64(len(nonHarvested)*10) - avgDistance, detailScore
+	return float64(len(harvested)*1000) - float64(len(nonHarvested)*10) - avgDistance + float64(len(myOrgans)*100) - float64(len(enemyOrgans)*100) + float64(proteinScore), detailScore
 }
 
 func findProteins(s State) []Entity {
