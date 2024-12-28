@@ -379,10 +379,10 @@ func (s State) isWalkable(coord Coord, allowOrgans bool) bool {
 				entity._type == SPORER
 		}
 	} else {
-		walkableEntity = globalState.Grid[coord.y][coord.x] == nil || globalState.Grid[coord.y][coord.x]._type.isProtein()
+		walkableEntity = s.Grid[coord.y][coord.x] == nil || s.Grid[coord.y][coord.x]._type.isProtein()
 	}
 
-	return globalState.Grid[coord.y][coord.x] == nil || walkableEntity
+	return s.Grid[coord.y][coord.x] == nil || walkableEntity
 }
 
 var globalState State
