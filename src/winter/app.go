@@ -485,6 +485,13 @@ func abs(a int) int {
 	return a
 }
 
+func absF(a float64) float64 {
+	if a < 0 {
+		return -a
+	}
+	return a
+}
+
 type SporePlan struct {
 	organ          Entity // the organ from which to grow the sporer
 	newSporerCoord Coord  // the coord of the sporer to grow
@@ -919,23 +926,50 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 	//}
 
 	// better to have more proteins left (do not waste them to move)
-	proteinScore := s.MyProteins[0] + s.MyProteins[1] + s.MyProteins[2] + s.MyProteins[3]
+	proteinScore := float64(s.MyProteins[0] + s.MyProteins[1] + s.MyProteins[2] + s.MyProteins[3])
 
 	for iProt := 0; iProt < 4; iProt++ {
 		if s.MyProteins[iProt] <= 2 {
-			proteinScore -= 1000
+			proteinScore -= 2000
 		}
 	}
+
+	income := computeTurnIncome(harvested)
+
+	// prefer a balanced income: 1A, 1B, 1C, 1D is better than 4A
+	avgIncome := average(income)
+
+	// sum of the proteinIncome diff from the average (the more balanced, the better)
+	balancedProteinScore := 0.0
+
+	for iProt := 0; iProt < 4; iProt++ {
+		balancedProteinScore += absF(income[iProt] - avgIncome)
+	}
+
+	proteinScore -= balancedProteinScore * 10
 
 	avgDistance := totalDistance / float64(organCount)
 
 	defendedDisputedCells := findDefendedDisputedCells(s, disputedCellsMap)
 
 	//detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, my organs: %d, enemy organs: %d, distance to closest protein: %d (%s), protein score: %d\n", len(harvested), len(nonHarvested), len(myOrgans), len(enemyOrgans), distanceClosestProtein, pathStr, proteinScore)
-	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %f, avgDistance: %f\n, my organs: %d, enemy organs: %d, protein score: %d\n, defended cells: %d", len(harvested), len(nonHarvested), totalDistance, avgDistance, len(myOrgans), len(enemyOrgans), proteinScore, len(defendedDisputedCells))
+	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %f, avgDistance: %f\n, my organs: %d, enemy organs: %d, protein score: %f\n, defended cells: %d", len(harvested), len(nonHarvested), totalDistance, avgDistance, len(myOrgans), len(enemyOrgans), proteinScore, len(defendedDisputedCells))
 
 	//return float64(len(harvested)*100 - len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein*10 + proteinScore), detailScore
-	return float64(len(harvested)*1000) - float64(len(nonHarvested)*10) - avgDistance + float64(len(myOrgans)*10000) - float64(len(enemyOrgans)*10000) + float64(proteinScore) + float64(len(defendedDisputedCells))*2000, detailScore
+	return float64(len(harvested)*2000) - float64(len(nonHarvested)*10) - avgDistance + float64(len(myOrgans)*10000) - float64(len(enemyOrgans)*10000) + proteinScore + float64(len(defendedDisputedCells))*2000, detailScore
+}
+
+func average(values []float64) float64 {
+	if len(values) == 0 {
+		panic("Empty values")
+	}
+
+	sum := 0.0
+	for _, v := range values {
+		sum += v
+	}
+
+	return sum / float64(len(values))
 }
 
 func findDefendedDisputedCells(s State, disputedCellsMap [][]bool) []Coord {
