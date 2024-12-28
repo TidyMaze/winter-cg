@@ -922,7 +922,7 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 	proteinScore := s.MyProteins[0] + s.MyProteins[1] + s.MyProteins[2] + s.MyProteins[3]
 
 	for iProt := 0; iProt < 4; iProt++ {
-		if s.MyProteins[iProt] <= 0 {
+		if s.MyProteins[iProt] <= 2 {
 			proteinScore -= 1000
 		}
 	}
