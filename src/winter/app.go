@@ -926,7 +926,7 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 	//}
 
 	// better to have more proteins left (do not waste them to move)
-	proteinScore := float64(s.MyProteins[0]+s.MyProteins[1]+s.MyProteins[2]+s.MyProteins[3]) * 1000
+	proteinScore := float64(s.MyProteins[0]+s.MyProteins[1]+s.MyProteins[2]+s.MyProteins[3]) * 2000
 
 	for iProt := 0; iProt < 4; iProt++ {
 		if s.MyProteins[iProt] <= 2 {
