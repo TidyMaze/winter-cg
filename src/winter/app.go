@@ -639,7 +639,7 @@ func (a GrowAction) getStringCommand() string {
 }
 
 func (a GrowAction) String() string {
-	return fmt.Sprintf("Grow %s at %+v, dir: %s, message: %s", showOrganType(a._type), a.coord, showDir(a.dir), a.message)
+	return fmt.Sprintf("Grow %s at %+v from %d, dir: %s, message: %s", showOrganType(a._type), a.coord, a.organId, showDir(a.dir), a.message)
 }
 
 type WaitAction struct {
