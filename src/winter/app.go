@@ -1437,18 +1437,20 @@ func findActionsForOrgan(s State, root, organ Entity, enemyTentaclesTargets [][]
 func findSporeActions(s State, root Entity, organ Entity, enemyTentaclesTargets [][]bool) []Action {
 	dir := organ.organDir
 
-	reachable := findReachableSporerCells(s, organ.coord, dir)
-
 	actions := make([]Action, 0)
 
-	for _, coord := range reachable {
-		if !enemyTentaclesTargets[coord.y][coord.x] {
-			actions = append(actions, SporeAction{
-				rootOrganId: root.organId,
-				sporerId:    organ.organId,
-				coord:       coord,
-				message:     "",
-			})
+	if canSpore(s.MyProteins) {
+		reachable := findReachableSporerCells(s, organ.coord, dir)
+
+		for _, coord := range reachable {
+			if !enemyTentaclesTargets[coord.y][coord.x] {
+				actions = append(actions, SporeAction{
+					rootOrganId: root.organId,
+					sporerId:    organ.organId,
+					coord:       coord,
+					message:     "",
+				})
+			}
 		}
 	}
 
