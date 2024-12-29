@@ -952,11 +952,64 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 
 	defendedDisputedCells := findDefendedDisputedCells(s, disputedCellsMap)
 
-	//detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, my organs: %d, enemy organs: %d, distance to closest protein: %d (%s), protein score: %d\n", len(harvested), len(nonHarvested), len(myOrgans), len(enemyOrgans), distanceClosestProtein, pathStr, proteinScore)
 	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %f, avgDistance: %f\n, my organs: %d, enemy organs: %d, protein score: %f\n, defended cells: %d", len(harvested), len(nonHarvested), totalDistance, avgDistance, len(myOrgans), len(enemyOrgans), proteinScore, len(defendedDisputedCells))
 
-	//return float64(len(harvested)*100 - len(nonHarvested) + len(myOrgans)*100 - len(enemyOrgans)*100 - distanceClosestProtein*10 + proteinScore), detailScore
-	return float64(len(harvested)*4000) + float64(len(nonHarvested)*10) - avgDistance + float64(len(myOrgans)*10000) - float64(len(enemyOrgans)*10000) + proteinScore + float64(len(defendedDisputedCells))*4000, detailScore
+	// bonus for all covered cells by my sporers
+	sporerCoveredCells := len(findSporerCells(s))
+
+	totalScore := float64(len(harvested)*4000) +
+		float64(len(nonHarvested)*10) -
+		avgDistance +
+		float64(len(myOrgans)*10000) -
+		float64(len(enemyOrgans)*10000) +
+		proteinScore +
+		float64(len(defendedDisputedCells))*4000 +
+		float64(sporerCoveredCells)
+	return totalScore, detailScore
+}
+
+func findSporerCells(s State) []Coord {
+	cells := make([][]bool, s.Height)
+
+	for i := 0; i < s.Height; i++ {
+		cells[i] = make([]bool, s.Width)
+		for j := 0; j < s.Width; j++ {
+			cells[i][j] = false
+		}
+	}
+
+	for _, entity := range s.Entities {
+		if entity._type == SPORER && entity.owner == ME {
+			// add all cells that are covered by the sporer
+			dir := entity.organDir
+			coord := entity.coord
+			for {
+				coord = coord.add(offsets[dir])
+				if !coord.isValid() {
+					break
+				}
+
+				if !s.isWalkable(coord, false) {
+					break
+				}
+
+				cells[coord.y][coord.x] = true
+			}
+		}
+	}
+
+	// collect the cells
+	res := make([]Coord, 0)
+
+	for i := 0; i < s.Height; i++ {
+		for j := 0; j < s.Width; j++ {
+			if cells[i][j] {
+				res = append(res, Coord{j, i})
+			}
+		}
+	}
+
+	return res
 }
 
 func average(values []float64) float64 {
