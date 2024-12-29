@@ -959,7 +959,7 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 
 	totalScore := float64(len(harvested)*4000) +
 		float64(len(nonHarvested)*10) -
-		avgDistance +
+		avgDistance*100 +
 		float64(len(myOrgans)*10000) -
 		float64(len(enemyOrgans)*10000) +
 		proteinScore +
@@ -1205,7 +1205,7 @@ func applyActions(s State, actions []Action) State {
 				}
 
 				if oldEntityAtCoord._type != PROTEIN_A && oldEntityAtCoord._type != PROTEIN_B && oldEntityAtCoord._type != PROTEIN_C && oldEntityAtCoord._type != PROTEIN_D {
-					panic(fmt.Sprintf("Entity at %+v is not a protein", a.coord))
+					panic(fmt.Sprintf("Entity at %+v is not a protein (%+v)", a.coord, showOrganType(oldEntityAtCoord._type)))
 				}
 
 				if oldEntityAtCoord._type.isProtein() {
@@ -1279,7 +1279,7 @@ func applyActions(s State, actions []Action) State {
 				}
 
 				if oldEntityAtCoord._type != PROTEIN_A && oldEntityAtCoord._type != PROTEIN_B && oldEntityAtCoord._type != PROTEIN_C && oldEntityAtCoord._type != PROTEIN_D {
-					panic(fmt.Sprintf("Entity at %+v is not a protein", a.coord))
+					panic(fmt.Sprintf("Entity at %+v is not a protein (%+v)", a.coord, showOrganType(oldEntityAtCoord._type)))
 				}
 
 				if oldEntityAtCoord._type.isProtein() {
