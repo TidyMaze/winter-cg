@@ -964,7 +964,7 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 		float64(len(enemyOrgans)*10000) +
 		proteinScore +
 		float64(len(defendedDisputedCells))*4000 +
-		float64(sporerCoveredCells)*10
+		float64(sporerCoveredCells)*100
 	return totalScore, detailScore
 }
 
