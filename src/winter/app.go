@@ -981,18 +981,9 @@ func findSporerCells(s State) []Coord {
 	for _, entity := range s.Entities {
 		if entity._type == SPORER && entity.owner == ME {
 			// add all cells that are covered by the sporer
-			dir := entity.organDir
-			coord := entity.coord
-			for {
-				coord = coord.add(offsets[dir])
-				if !coord.isValid() {
-					break
-				}
+			reachable := findReachableSporerCells(s, entity.coord, entity.organDir)
 
-				if !s.isWalkable(coord, false) {
-					break
-				}
-
+			for _, coord := range reachable {
 				cells[coord.y][coord.x] = true
 			}
 		}
@@ -2189,6 +2180,26 @@ func sporeIfPossible(s State, sporeCells [][]bool) bool {
 
 func canSpore(proteinCounts []int) bool {
 	return proteinCounts[0] >= 1 && proteinCounts[1] >= 1 && proteinCounts[2] >= 1 && proteinCounts[3] >= 1
+}
+
+func findReachableSporerCells(s State, from Coord, dir Dir) []Coord {
+	reachableCells := make([]Coord, 0)
+
+	coord := from
+	for {
+		coord = coord.add(offsets[dir])
+		if !coord.isValid() {
+			break
+		}
+
+		if !s.isWalkable(coord, false) {
+			break
+		}
+
+		reachableCells = append(reachableCells, coord)
+	}
+
+	return reachableCells
 }
 
 func findSporeCellInDirection(s State, coord Coord, dir Dir, sporeCells [][]bool) Coord {
