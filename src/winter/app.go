@@ -1485,7 +1485,7 @@ func findSporeActions(s State, root Entity, organ Entity, enemyTentaclesTargets 
 
 	actions := make([]Action, 0)
 
-	if canSpore(s.MyProteins) {
+	if organ._type == SPORER && canSpore(s.MyProteins) {
 		reachable := findReachableSporerCells(s, organ.coord, dir)
 
 		for _, coord := range reachable {
