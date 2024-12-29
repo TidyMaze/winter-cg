@@ -1279,7 +1279,7 @@ func applyActions(s State, actions []Action) State {
 				}
 
 				if oldEntityAtCoord._type != PROTEIN_A && oldEntityAtCoord._type != PROTEIN_B && oldEntityAtCoord._type != PROTEIN_C && oldEntityAtCoord._type != PROTEIN_D {
-					panic(fmt.Sprintf("Entity at %+v is not a protein (%+v)", a.coord, showOrganType(oldEntityAtCoord._type)))
+					panic(fmt.Sprintf("Entity at %+v is not a protein (%+v). When applying actions %+v", a.coord, showOrganType(oldEntityAtCoord._type), actions))
 				}
 
 				if oldEntityAtCoord._type.isProtein() {
