@@ -1208,6 +1208,11 @@ func applyActions(s State, actions []Action) State {
 					panic(fmt.Sprintf("Entity at %+v is not a protein", a.coord))
 				}
 
+				if oldEntityAtCoord._type.isProtein() {
+					// get the proteins of the protein source (3 proteins per source)
+					newState.MyProteins[oldEntityAtCoord._type-PROTEIN_A] += 3
+				}
+
 				newState.Grid[a.coord.y][a.coord.x] = nil
 
 				// remove the old entity from the entities list
@@ -1275,6 +1280,11 @@ func applyActions(s State, actions []Action) State {
 
 				if oldEntityAtCoord._type != PROTEIN_A && oldEntityAtCoord._type != PROTEIN_B && oldEntityAtCoord._type != PROTEIN_C && oldEntityAtCoord._type != PROTEIN_D {
 					panic(fmt.Sprintf("Entity at %+v is not a protein", a.coord))
+				}
+
+				if oldEntityAtCoord._type.isProtein() {
+					// get the proteins of the protein source (3 proteins per source)
+					newState.MyProteins[oldEntityAtCoord._type-PROTEIN_A] += 3
 				}
 
 				newState.Grid[a.coord.y][a.coord.x] = nil
