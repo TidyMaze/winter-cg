@@ -1428,14 +1428,31 @@ func findActionsForOrgan(s State, root, organ Entity, enemyTentaclesTargets [][]
 	actions = append(actions, growActions...)
 
 	// find the spore actions
-	sporeActions := findSporeActions(root, organ, enemyTentaclesTargets)
+	sporeActions := findSporeActions(s, root, organ, enemyTentaclesTargets)
 	actions = append(actions, sporeActions...)
 
 	return actions
 }
 
-func findSporeActions(root Entity, organ Entity, enemyTentaclesTargets [][]bool) []Action {
-	return make([]Action, 0)
+func findSporeActions(s State, root Entity, organ Entity, enemyTentaclesTargets [][]bool) []Action {
+	dir := organ.organDir
+
+	reachable := findReachableSporerCells(s, organ.coord, dir)
+
+	actions := make([]Action, 0)
+
+	for _, coord := range reachable {
+		if !enemyTentaclesTargets[coord.y][coord.x] {
+			actions = append(actions, SporeAction{
+				rootOrganId: root.organId,
+				sporerId:    organ.organId,
+				coord:       coord,
+				message:     "",
+			})
+		}
+	}
+
+	return actions
 }
 
 func findWaitActions(root Entity, organ Entity) []Action {
