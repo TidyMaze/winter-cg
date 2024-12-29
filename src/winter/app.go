@@ -1086,7 +1086,7 @@ func computeTurnIncome(harvestedProteins []Entity) []float64 {
 		turnIncome[protein._type-PROTEIN_A]++
 	}
 
-	debug("Turn income: %+v\n", turnIncome)
+	//debug("Turn income: %+v\n", turnIncome)
 
 	return turnIncome
 }
