@@ -1254,7 +1254,43 @@ func applyActions(s State, actions []Action) State {
 		case WaitAction:
 			// do nothing
 		case SporeAction:
-			panic(fmt.Sprintf("Spore action not implemented for action %+v", a))
+			newOrganId := maxOrganId(newState.Entities) + 1
+
+			newEntity := Entity{
+				coord:         a.coord,
+				_type:         ROOT,
+				owner:         ME,
+				organId:       newOrganId,
+				organDir:      N,
+				organParentId: 0,
+				organRootId:   newOrganId,
+			}
+
+			oldEntityAtCoord := newState.Grid[a.coord.y][a.coord.x]
+
+			if oldEntityAtCoord != nil {
+				if oldEntityAtCoord.coord != a.coord {
+					panic(fmt.Sprintf("Old entity coord %+v different from new coord %+v", oldEntityAtCoord.coord, a.coord))
+				}
+
+				if oldEntityAtCoord._type != PROTEIN_A && oldEntityAtCoord._type != PROTEIN_B && oldEntityAtCoord._type != PROTEIN_C && oldEntityAtCoord._type != PROTEIN_D {
+					panic(fmt.Sprintf("Entity at %+v is not a protein", a.coord))
+				}
+
+				newState.Grid[a.coord.y][a.coord.x] = nil
+
+				// remove the old entity from the entities list
+				newState.Entities = removeEntity(newState.Entities, *oldEntityAtCoord)
+			}
+
+			newState.Entities = append(newState.Entities, newEntity)
+			newState.Grid[a.coord.y][a.coord.x] = &newEntity
+
+			// apply the spore cost to my proteins
+			newState.MyProteins[0] -= 1
+			newState.MyProteins[1] -= 1
+			newState.MyProteins[2] -= 1
+			newState.MyProteins[3] -= 1
 		}
 	}
 
