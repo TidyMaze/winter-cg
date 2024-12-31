@@ -3,13 +3,16 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
+	"net/http"
 	"os"
 	"path/filepath"
-	"runtime/pprof"
 	"sort"
 	"strings"
 	"time"
 )
+
+import _ "net/http/pprof"
 
 /**
  * Grow and multiply your organisms to end up larger than your opponent.
@@ -2403,16 +2406,30 @@ func main() {
 
 	if local {
 
-		profilerFilePath := "cpu.prof"
-		profilerFile, err := os.Create(profilerFilePath)
+		// start pprof server for profiling
+		go func() {
+			log.Println(http.ListenAndServe("localhost:6060", nil))
+		}()
 
-		if err != nil {
-			panic(err)
-		}
+		//profilerFilePath := "cpu.prof"
+		//profilerFile, err := os.Create(profilerFilePath)
 
-		pprof.StartCPUProfile(profilerFile)
+		//if err != nil {
+		//	panic(err)
+		//}
+
+		//profilerMemPath := "mem.prof"
+		//profilerMemFile, err := os.Create(profilerMemPath)
+
+		//if err != nil {
+		//	panic(err)
+		//}
+
+		//pprof.StartCPUProfile(profilerFile)
 
 		tests := loadTests("test")
+
+		start := time.Now()
 
 		for i := 0; i < 50; i++ {
 			for _, test := range tests {
@@ -2420,7 +2437,13 @@ func main() {
 			}
 		}
 
-		pprof.StopCPUProfile()
+		elapsed := time.Since(start)
+
+		fmt.Printf("Elapsed for all: %s\n", elapsed)
+
+		//pprof.WriteHeapProfile(profilerMemFile)
+
+		//pprof.StopCPUProfile()
 	} else {
 		mainCG()
 	}
