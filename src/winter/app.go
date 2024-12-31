@@ -2414,8 +2414,10 @@ func main() {
 
 		tests := loadTests("test")
 
-		for _, test := range tests {
-			runTest(test)
+		for i := 0; i < 10; i++ {
+			for _, test := range tests {
+				runTest(test)
+			}
 		}
 
 		pprof.StopCPUProfile()
