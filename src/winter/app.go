@@ -501,8 +501,6 @@ type SporePlan struct {
 }
 
 func parseTurnState(reader io.Reader) {
-	debug("%d %d\n", globalState.Width, globalState.Height)
-
 	globalState.Grid = make([][]*Entity, globalState.Height)
 	for i := 0; i < globalState.Height; i++ {
 		globalState.Grid[i] = make([]*Entity, globalState.Width)
@@ -513,6 +511,8 @@ func parseTurnState(reader io.Reader) {
 
 	var entityCount int
 	fmt.Fscan(reader, &entityCount)
+	debug("%d %d\n", globalState.Width, globalState.Height)
+	debug("%d\n", entityCount)
 
 	globalState.Entities = make([]Entity, entityCount)
 
