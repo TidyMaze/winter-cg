@@ -182,7 +182,7 @@ Response time for the first turn ≤ 1000ms
  **/
 
 type Coord struct {
-	x, y int
+	x, y int8
 }
 
 func (c Coord) add(offset Coord) Coord {
@@ -190,10 +190,10 @@ func (c Coord) add(offset Coord) Coord {
 }
 
 func (c Coord) isValid(s State) bool {
-	return c.x >= 0 && c.x < s.Width && c.y >= 0 && c.y < s.Height
+	return c.x >= int8(0) && c.x < int8(s.Width) && c.y >= int8(0) && c.y < int8(s.Height)
 }
 
-type EntityType int
+type EntityType uint8
 
 const (
 	WALL EntityType = iota
@@ -238,7 +238,7 @@ func (t EntityType) String() string {
 	panic(fmt.Sprintf("Unknown type %d", t))
 }
 
-type Dir int
+type Dir int8
 
 func (d Dir) String() string {
 	return showDir(d)
@@ -305,7 +305,7 @@ func findApproximateDir(from, to Coord) Dir {
 	}
 }
 
-type Owner int
+type Owner uint8
 
 const (
 	ME Owner = iota
@@ -317,10 +317,10 @@ type Entity struct {
 	coord         Coord
 	_type         EntityType
 	owner         Owner
-	organId       int
+	organId       uint16
 	organDir      Dir
-	organParentId int
-	organRootId   int
+	organParentId uint16
+	organRootId   uint16
 }
 
 func showOwner(owner Owner) string {
@@ -363,13 +363,13 @@ func (e Entity) String() string {
 }
 
 type State struct {
-	Height               int
-	Width                int
+	Height               uint8
+	Width                uint8
 	Entities             []Entity
 	Grid                 [][]*Entity
-	MyProteins           []int
-	OppProteins          []int
-	RequiredActionsCount int
+	MyProteins           []uint16
+	OppProteins          []uint16
+	RequiredActionsCount uint8
 }
 
 func (s State) isWalkable(coord Coord, allowOrgans bool) bool {
@@ -466,7 +466,7 @@ func showOrganType(_type EntityType) string {
 	}
 }
 
-func parseOwner(owner int) Owner {
+func parseOwner(owner int8) Owner {
 	switch owner {
 	case 1:
 		return ME
@@ -482,11 +482,11 @@ func debug(msg string, v ...interface{}) {
 	fmt.Fprintf(os.Stderr, msg, v...)
 }
 
-func distance(a, b Coord) int {
+func distance(a, b Coord) int8 {
 	return abs(a.x-b.x) + abs(a.y-b.y)
 }
 
-func abs(a int) int {
+func abs(a int8) int8 {
 	if a < 0 {
 		return -a
 	}
@@ -507,16 +507,16 @@ type SporePlan struct {
 	target         Coord  // the target coord of the sporer (either a protein or a neighbor of a protein)
 }
 
-func parseTurnState(reader io.Reader, width int, height int) State {
+func parseTurnState(reader io.Reader, width uint8, height uint8) State {
 	state := State{}
 
 	state.Width = width
 	state.Height = height
 
 	state.Grid = make([][]*Entity, state.Height)
-	for i := 0; i < state.Height; i++ {
+	for i := uint8(0); i < state.Height; i++ {
 		state.Grid[i] = make([]*Entity, state.Width)
-		for j := 0; j < state.Width; j++ {
+		for j := uint8(0); j < state.Width; j++ {
 			state.Grid[i][j] = nil
 		}
 	}
@@ -534,11 +534,12 @@ func parseTurnState(reader io.Reader, width int, height int) State {
 		// owner: 1 if your organ, 0 if enemy organ, -1 if neither
 		// organId: id of this entity if it's an organ, 0 otherwise
 		// organDir: N,E,S,W or X if not an organ
-		var x, y int
+		var x, y int8
 		var _type string
-		var owner, organId int
+		var owner int8
+		var organId uint16
 		var organDir string
-		var organParentId, organRootId int
+		var organParentId, organRootId uint16
 		fmt.Fscan(reader, &x, &y, &_type, &owner, &organId, &organDir, &organParentId, &organRootId)
 
 		debug("%d %d %s %d %d %s %d %d\n", x, y, _type, owner, organId, organDir, organParentId, organRootId)
@@ -571,11 +572,11 @@ func parseTurnState(reader io.Reader, width int, height int) State {
 	// 	fmt.Fprintf(os.Stderr, "\n")
 	// }
 
-	state.MyProteins = make([]int, 4)
-	state.OppProteins = make([]int, 4)
+	state.MyProteins = make([]uint16, 4)
+	state.OppProteins = make([]uint16, 4)
 
 	// myD: your protein stock
-	var myA, myB, myC, myD int
+	var myA, myB, myC, myD uint16
 	fmt.Fscan(reader, &myA, &myB, &myC, &myD)
 
 	debug("%d %d %d %d\n", myA, myB, myC, myD)
@@ -586,7 +587,7 @@ func parseTurnState(reader io.Reader, width int, height int) State {
 	state.MyProteins[3] = myD
 
 	// oppD: opponent's protein stock
-	var oppA, oppB, oppC, oppD int
+	var oppA, oppB, oppC, oppD uint16
 	fmt.Fscan(reader, &oppA, &oppB, &oppC, &oppD)
 
 	debug("%d %d %d %d\n", oppA, oppB, oppC, oppD)
@@ -597,7 +598,7 @@ func parseTurnState(reader io.Reader, width int, height int) State {
 	state.OppProteins[3] = oppD
 
 	// requiredActionsCount: your number of organisms, output an action for each one in any order
-	var requiredActionsCount int
+	var requiredActionsCount uint8
 	fmt.Fscan(reader, &requiredActionsCount)
 
 	debug("%d\n", requiredActionsCount)
@@ -623,21 +624,21 @@ func findOrgansOfOrganism(s State, root Entity) []Entity {
 }
 
 type Action interface {
-	getRootOrganId() int
+	getRootOrganId() uint16
 	getMessage() string
 	getStringCommand() string
 }
 
 type GrowAction struct {
-	rootOrganId int
-	organId     int
+	rootOrganId uint16
+	organId     uint16
 	coord       Coord
 	_type       EntityType
 	dir         Dir
 	message     string
 }
 
-func (a GrowAction) getRootOrganId() int {
+func (a GrowAction) getRootOrganId() uint16 {
 	return a.rootOrganId
 }
 
@@ -654,11 +655,11 @@ func (a GrowAction) String() string {
 }
 
 type WaitAction struct {
-	rootOrganId int
+	rootOrganId uint16
 	message     string
 }
 
-func (a WaitAction) getRootOrganId() int {
+func (a WaitAction) getRootOrganId() uint16 {
 	return a.rootOrganId
 }
 
@@ -675,13 +676,13 @@ func (a WaitAction) String() string {
 }
 
 type SporeAction struct {
-	rootOrganId int
-	sporerId    int
+	rootOrganId uint16
+	sporerId    uint16
 	coord       Coord
 	message     string
 }
 
-func (a SporeAction) getRootOrganId() int {
+func (a SporeAction) getRootOrganId() uint16 {
 	return a.rootOrganId
 }
 
@@ -713,7 +714,7 @@ func sendActions(s State) {
 		}
 	}
 
-	if len(roots) != s.RequiredActionsCount {
+	if len(roots) != int(s.RequiredActionsCount) {
 		panic(fmt.Sprintf("Expected %d roots, found %d", s.RequiredActionsCount, len(roots)))
 	}
 
@@ -724,7 +725,7 @@ func sendActions(s State) {
 
 	actions := findBestActions(s, roots, enemyTentaclesTargets).actions
 
-	for i := 0; i < s.RequiredActionsCount; i++ {
+	for i := uint8(0); i < s.RequiredActionsCount; i++ {
 		// get the first root
 		var root Entity = roots[i]
 
@@ -786,7 +787,7 @@ func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) Pl
 
 	// for each root, find all possible actions for each organ
 
-	actionsPerRoot := make(map[int][]Action)
+	actionsPerRoot := make(map[uint16][]Action)
 
 	for _, root := range roots {
 		// find all organs of the root
@@ -885,8 +886,8 @@ func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) Pl
 
 func showDisputedCellsMap(s State, cellsMap [][]bool) interface{} {
 	str := ""
-	for i := 0; i < s.Height; i++ {
-		for j := 0; j < s.Width; j++ {
+	for i := uint8(0); i < s.Height; i++ {
+		for j := uint8(0); j < s.Width; j++ {
 			if cellsMap[i][j] {
 				str += "X "
 			} else {
@@ -900,8 +901,8 @@ func showDisputedCellsMap(s State, cellsMap [][]bool) interface{} {
 
 func showProteinMap(s State, proteinMap [][]float64) string {
 	str := ""
-	for i := 0; i < s.Height; i++ {
-		for j := 0; j < s.Width; j++ {
+	for i := uint8(0); i < s.Height; i++ {
+		for j := uint8(0); j < s.Width; j++ {
 			str += fmt.Sprintf("%d ", int(proteinMap[i][j]))
 		}
 		str += "\n"
@@ -989,9 +990,9 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 func findSporerCells(s State) []Coord {
 	cells := make([][]bool, s.Height)
 
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		cells[i] = make([]bool, s.Width)
-		for j := 0; j < s.Width; j++ {
+		for j := uint8(0); j < s.Width; j++ {
 			cells[i][j] = false
 		}
 	}
@@ -1010,10 +1011,10 @@ func findSporerCells(s State) []Coord {
 	// collect the cells
 	res := make([]Coord, 0)
 
-	for i := 0; i < s.Height; i++ {
-		for j := 0; j < s.Width; j++ {
+	for i := uint8(0); i < s.Height; i++ {
+		for j := uint8(0); j < s.Width; j++ {
 			if cells[i][j] {
-				res = append(res, Coord{j, i})
+				res = append(res, Coord{int8(j), int8(i)})
 			}
 		}
 	}
@@ -1067,9 +1068,9 @@ func buildDistanceMapForProtein(s State, protein Coord) [][]int {
 	// build the grid of distances from the protein
 	distances := make([][]int, s.Height)
 
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		distances[i] = make([]int, s.Width)
-		for j := 0; j < s.Width; j++ {
+		for j := uint8(0); j < s.Width; j++ {
 			distances[i][j] = -1
 		}
 	}
@@ -1153,9 +1154,9 @@ func buildProteinMap(s State, nonHarvestedProteins []Entity, harvestedProteins [
 
 	finalMap := make([][]float64, s.Height)
 
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		finalMap[i] = make([]float64, s.Width)
-		for j := 0; j < s.Width; j++ {
+		for j := uint8(0); j < s.Width; j++ {
 			finalMap[i][j] = 0
 		}
 	}
@@ -1164,8 +1165,8 @@ func buildProteinMap(s State, nonHarvestedProteins []Entity, harvestedProteins [
 		singleProteinMap := buildDistanceMapForProtein(s, protein.coord)
 
 		// add the distances to the final map
-		for i := 0; i < s.Height; i++ {
-			for j := 0; j < s.Width; j++ {
+		for i := uint8(0); i < s.Height; i++ {
+			for j := uint8(0); j < s.Width; j++ {
 				finalMap[i][j] += float64(singleProteinMap[i][j]) * (1 + normalizedTurnIncome[protein._type-PROTEIN_A])
 			}
 		}
@@ -1191,9 +1192,9 @@ func applyActions(s State, actions []Action) State {
 
 	growCoords := make([][]bool, s.Height)
 
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		growCoords[i] = make([]bool, s.Width)
-		for j := 0; j < s.Width; j++ {
+		for j := uint8(0); j < s.Width; j++ {
 			growCoords[i][j] = false
 		}
 	}
@@ -1284,10 +1285,10 @@ func applyActions(s State, actions []Action) State {
 
 			// apply the grow cost to my proteins
 			growCost := growCost(a._type)
-			newState.MyProteins[0] -= growCost.costA
-			newState.MyProteins[1] -= growCost.costB
-			newState.MyProteins[2] -= growCost.costC
-			newState.MyProteins[3] -= growCost.costD
+			newState.MyProteins[0] -= uint16(growCost.costA)
+			newState.MyProteins[1] -= uint16(growCost.costB)
+			newState.MyProteins[2] -= uint16(growCost.costC)
+			newState.MyProteins[3] -= uint16(growCost.costD)
 		case WaitAction:
 			// do nothing
 		case SporeAction:
@@ -1380,14 +1381,19 @@ func removeEntity(entities []Entity, entity Entity) []Entity {
 	return entities[:len(entities)-1]
 }
 
-func maxOrganId(entities []Entity) int {
-	maxId := -1
+func maxOrganId(entities []Entity) uint16 {
+	maxId := int16(-1)
 	for _, entity := range entities {
-		if entity.organId > maxId {
-			maxId = entity.organId
+		if int16(entity.organId) > maxId {
+			maxId = int16(entity.organId)
 		}
 	}
-	return maxId
+
+	if maxId < 0 {
+		panic("No max id found")
+	}
+
+	return uint16(maxId)
 }
 
 func copyState(s State) State {
@@ -1396,8 +1402,8 @@ func copyState(s State) State {
 		Width:                s.Width,
 		Entities:             make([]Entity, len(s.Entities)),
 		Grid:                 make([][]*Entity, s.Height),
-		MyProteins:           make([]int, 4),
-		OppProteins:          make([]int, 4),
+		MyProteins:           make([]uint16, 4),
+		OppProteins:          make([]uint16, 4),
 		RequiredActionsCount: s.RequiredActionsCount,
 	}
 
@@ -1408,9 +1414,9 @@ func copyState(s State) State {
 	}
 
 	// copy grid
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		newState.Grid[i] = make([]*Entity, s.Width)
-		for j := 0; j < s.Width; j++ {
+		for j := uint8(0); j < s.Width; j++ {
 			// pointer is copied (same ref)
 			newState.Grid[i][j] = s.Grid[i][j]
 		}
@@ -1450,9 +1456,9 @@ Find all the empty cells that are:
 func findDisputedCells(s State) [][]bool {
 	disputedCells := make([][]bool, s.Height)
 
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		disputedCells[i] = make([]bool, s.Width)
-		for j := 0; j < s.Width; j++ {
+		for j := uint8(0); j < s.Width; j++ {
 			disputedCells[i][j] = false
 		}
 	}
@@ -1471,9 +1477,9 @@ func findDisputedCells(s State) [][]bool {
 	}
 
 	forbiddenCells := make([][]bool, s.Height)
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		forbiddenCells[i] = make([]bool, s.Width)
-		for j := 0; j < s.Width; j++ {
+		for j := uint8(0); j < s.Width; j++ {
 			forbiddenCells[i][j] = false
 		}
 	}
@@ -1485,9 +1491,9 @@ func findDisputedCells(s State) [][]bool {
 		}
 	}
 
-	for i := 0; i < s.Height; i++ {
-		for j := 0; j < s.Width; j++ {
-			coord := Coord{j, i}
+	for i := uint8(0); i < s.Height; i++ {
+		for j := uint8(0); j < s.Width; j++ {
+			coord := Coord{int8(j), int8(i)}
 
 			if s.isWalkable(coord, false) {
 				// find the distance from any of my organs to the cell
@@ -1636,7 +1642,7 @@ func findClosestOrganTo(s State, to []Coord, from Coord, tentacleTargets [][]boo
 	//debug("From: %+v\n", from)
 
 	visited := make([][]bool, s.Height)
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		visited[i] = make([]bool, s.Width)
 	}
 
@@ -1645,7 +1651,7 @@ func findClosestOrganTo(s State, to []Coord, from Coord, tentacleTargets [][]boo
 	visited[from.y][from.x] = true
 
 	toMap := make([][]bool, s.Height)
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		toMap[i] = make([]bool, s.Width)
 	}
 
@@ -1690,7 +1696,7 @@ func findClosestEnemyOrgan(s State, root Entity) Coord {
 
 	// use BFS to find the closest enemy organ from the root
 	visited := make([][]bool, s.Height)
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		visited[i] = make([]bool, s.Width)
 	}
 
@@ -1736,13 +1742,13 @@ func findShortestPathProt(s State, organs []Entity, nonHarvestedProteins []Entit
 	}
 
 	blockedCoords := make([][]bool, s.Height)
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		blockedCoords[i] = make([]bool, s.Width)
 	}
 
 	// block the cells that are targeted by the enemy tentacles
-	for i := 0; i < s.Height; i++ {
-		for j := 0; j < s.Width; j++ {
+	for i := uint8(0); i < s.Height; i++ {
+		for j := uint8(0); j < s.Width; j++ {
 			if enemyTentaclesTargets[i][j] {
 				blockedCoords[i][j] = true
 			}
@@ -1750,9 +1756,9 @@ func findShortestPathProt(s State, organs []Entity, nonHarvestedProteins []Entit
 	}
 
 	// block the cells that are not walkable
-	for i := 0; i < s.Height; i++ {
-		for j := 0; j < s.Width; j++ {
-			if !s.isWalkable(Coord{j, i}, false) {
+	for i := uint8(0); i < s.Height; i++ {
+		for j := uint8(0); j < s.Width; j++ {
+			if !s.isWalkable(Coord{int8(j), int8(i)}, false) {
 				blockedCoords[i][j] = true
 			}
 		}
@@ -1764,7 +1770,7 @@ func findShortestPathProt(s State, organs []Entity, nonHarvestedProteins []Entit
 func findEnemyTentaclesTargets(s State) [][]bool {
 	// find all the cells that are targeted by the enemy tentacles (cannot grow there)
 	tentacleTargets := make([][]bool, s.Height)
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		tentacleTargets[i] = make([]bool, s.Width)
 	}
 
@@ -1831,7 +1837,7 @@ func findDestroyed(s State, attacked Entity) []Entity {
 	// use BFS to find all the children of the attacked organ
 
 	visited := make([][]bool, s.Height)
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		visited[i] = make([]bool, s.Width)
 	}
 
@@ -1878,10 +1884,10 @@ func growToFrontier(s State, organs []Entity, enemyTentaclesTargets [][]bool) {
 	var bestOfEnemyOrgans Entity
 	bestScore := -1000
 
-	for i := 0; i < s.Height; i++ {
-		for j := 0; j < s.Width; j++ {
+	for i := uint8(0); i < s.Height; i++ {
+		for j := uint8(0); j < s.Width; j++ {
 			if s.Grid[i][j] == nil && !enemyTentaclesTargets[i][j] {
-				cell := Coord{j, i}
+				cell := Coord{int8(j), int8(i)}
 
 				// find the closest of my organs
 				minDistance := 1000
@@ -1889,8 +1895,8 @@ func growToFrontier(s State, organs []Entity, enemyTentaclesTargets [][]bool) {
 
 				for _, organ := range organs {
 					dist := distance(cell, organ.coord)
-					if dist < minDistance {
-						minDistance = dist
+					if int(dist) < minDistance {
+						minDistance = int(dist)
 						closestOfMyOrgans = organ
 					}
 				}
@@ -1901,8 +1907,8 @@ func growToFrontier(s State, organs []Entity, enemyTentaclesTargets [][]bool) {
 
 				for _, organ := range enemyOrgans {
 					dist := distance(cell, organ.coord)
-					if dist < minDistance {
-						minDistance = dist
+					if int(dist) < minDistance {
+						minDistance = int(dist)
 						closestOfEnemyOrgans = organ
 					}
 				}
@@ -1911,8 +1917,8 @@ func growToFrontier(s State, organs []Entity, enemyTentaclesTargets [][]bool) {
 
 				// only keep if the cell is closest to one of my organs than to any of the enemy organs (score < 0) but with a score that is the closest to 0 (frontier)
 				if diffDist <= 0 {
-					if diffDist > bestScore {
-						bestScore = diffDist
+					if int(diffDist) > bestScore {
+						bestScore = int(diffDist)
 						bestCell = cell
 						bestOfMyOrgans = closestOfMyOrgans
 						bestOfEnemyOrgans = closestOfEnemyOrgans
@@ -1931,7 +1937,7 @@ func growToFrontier(s State, organs []Entity, enemyTentaclesTargets [][]bool) {
 
 		growDir := findApproximateDir(bestOfMyOrgans.coord, bestCell)
 
-		if growType == -1 {
+		if growType == WALL {
 			fmt.Println("WAIT cannot grow frontier")
 		} else {
 			fmt.Printf("GROW %d %d %d %s %s frontier\n", bestOfMyOrgans.organId, bestCell.x, bestCell.y, showOrganType(growType), showDir(growDir))
@@ -1941,7 +1947,7 @@ func growToFrontier(s State, organs []Entity, enemyTentaclesTargets [][]bool) {
 
 func buildSporeCellsMap(s State, nonHarvestedProteins []Entity) [][]bool {
 	sporeCells := make([][]bool, s.Height)
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		sporeCells[i] = make([]bool, s.Width)
 	}
 
@@ -2023,15 +2029,13 @@ func findGrowType(s State) EntityType {
 		return TENTACLE
 	}
 
-	growType := EntityType(-1)
-
 	for _, _type := range []EntityType{BASIC, HARVESTER, TENTACLE, SPORER} {
 		if canGrow(s.MyProteins, _type) {
 			return _type
 		}
 	}
 
-	return growType
+	return WALL
 }
 
 /*
@@ -2044,7 +2048,7 @@ func findShortestPath(s State, from, to []Coord, forbiddenCells [][]bool) []Coor
 	// the chosen algorithm is BFS
 
 	toMap := make([][]bool, s.Height)
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		toMap[i] = make([]bool, s.Width)
 	}
 
@@ -2053,15 +2057,15 @@ func findShortestPath(s State, from, to []Coord, forbiddenCells [][]bool) []Coor
 	}
 
 	previous := make([][]Coord, s.Height)
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		previous[i] = make([]Coord, s.Width)
-		for j := 0; j < s.Width; j++ {
+		for j := uint8(0); j < s.Width; j++ {
 			previous[i][j] = Coord{-1, -1}
 		}
 	}
 
 	visited := make([][]bool, s.Height)
-	for i := 0; i < s.Height; i++ {
+	for i := uint8(0); i < s.Height; i++ {
 		visited[i] = make([]bool, s.Width)
 	}
 
@@ -2137,7 +2141,7 @@ func growTowardsProtein(s State, nonHarvestedProteins []Entity, organs []Entity,
 				growDir = findDirRelativeTo(fromCell, stepCell)
 			}
 
-			if growType == -1 {
+			if growType == WALL {
 				fmt.Println("WAIT cannot grow path")
 			} else {
 				fmt.Printf("GROW %d %d %d %s %s path_closer_prot\n", fromEntity.organId, stepCell.x, stepCell.y, showOrganType(growType), showDir(growDir))
@@ -2164,7 +2168,7 @@ func growTowardsProtein(s State, nonHarvestedProteins []Entity, organs []Entity,
 
 				growDir := findApproximateDir(closestNeighbor, closestProtein.coord)
 
-				if growType == -1 {
+				if growType == WALL {
 					fmt.Println("WAIT cannot grow")
 				} else {
 					fmt.Printf("GROW %d %d %d %s %s closer_prot\n", closestOrgan.organId, closestNeighbor.x, closestNeighbor.y, showOrganType(growType), showDir(growDir))
@@ -2182,8 +2186,8 @@ func findClosestProteinAndOrgan(nonHarvestedProteins []Entity, organs []Entity) 
 	for _, protein := range nonHarvestedProteins {
 		for _, organ := range organs {
 			dist := distance(protein.coord, organ.coord)
-			if dist < minDistance {
-				minDistance = dist
+			if int(dist) < minDistance {
+				minDistance = int(dist)
 				closestProtein = protein
 				closestOrgan = organ
 			}
@@ -2205,8 +2209,8 @@ func findClosestNeighborToProtein(s State, protein Entity, organs []Entity, enem
 				s.isWalkable(neighbor, false) &&
 				!enemyTentaclesTargets[neighbor.y][neighbor.x] {
 				dist := distance(neighbor, protein.coord)
-				if dist < minDistance {
-					minDistance = dist
+				if int(dist) < minDistance {
+					minDistance = int(dist)
 					closestNeighbor = neighbor
 					closestOrgan = organ
 				}
@@ -2296,7 +2300,7 @@ func sporeIfPossible(s State, sporeCells [][]bool) bool {
 	return false
 }
 
-func canSpore(proteinCounts []int) bool {
+func canSpore(proteinCounts []uint16) bool {
 	return proteinCounts[0] >= 1 && proteinCounts[1] >= 1 && proteinCounts[2] >= 1 && proteinCounts[3] >= 1
 }
 
@@ -2390,7 +2394,7 @@ func runTest(test Test) {
 
 	reader := strings.NewReader(test.content)
 
-	width, height := 0, 0
+	width, height := uint8(0), uint8(0)
 
 	fmt.Fscan(reader, &width, &height)
 
@@ -2456,7 +2460,7 @@ func mainCG() {
 	// width: columns in the game grid
 	// height: rows in the game grid
 
-	width, height := 0, 0
+	width, height := uint8(0), uint8(0)
 
 	fmt.Fscan(reader, &width, &height)
 
@@ -2467,7 +2471,7 @@ func mainCG() {
 }
 
 type OrganGrowCost struct {
-	costA, costB, costC, costD int
+	costA, costB, costC, costD uint8
 }
 
 func growCost(_type EntityType) OrganGrowCost {
@@ -2485,7 +2489,7 @@ func growCost(_type EntityType) OrganGrowCost {
 	}
 }
 
-func canGrow(proteinCounts []int, _type EntityType) bool {
+func canGrow(proteinCounts []uint16, _type EntityType) bool {
 	cost := growCost(_type)
-	return proteinCounts[0] >= cost.costA && proteinCounts[1] >= cost.costB && proteinCounts[2] >= cost.costC && proteinCounts[3] >= cost.costD
+	return proteinCounts[0] >= uint16(cost.costA) && proteinCounts[1] >= uint16(cost.costB) && proteinCounts[2] >= uint16(cost.costC) && proteinCounts[3] >= uint16(cost.costD)
 }
