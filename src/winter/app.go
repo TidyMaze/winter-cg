@@ -2353,7 +2353,9 @@ func runTest(test Test) {
 }
 
 func main() {
-	local := true
+	local := os.Getenv("LOCAL_CG") == "true"
+
+	debug("Local: %v\n", local)
 
 	if local {
 		tests := loadTests("test")
