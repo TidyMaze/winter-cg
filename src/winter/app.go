@@ -501,6 +501,8 @@ type SporePlan struct {
 }
 
 func parseTurnState(reader io.Reader) {
+	debug("%d %d\n", globalState.Width, globalState.Height)
+
 	globalState.Grid = make([][]*Entity, globalState.Height)
 	for i := 0; i < globalState.Height; i++ {
 		globalState.Grid[i] = make([]*Entity, globalState.Width)
@@ -537,14 +539,6 @@ func parseTurnState(reader io.Reader) {
 			organDir:      parseDir(organDir),
 			organParentId: organParentId,
 			organRootId:   organRootId,
-		}
-
-		if entity._type == ROOT {
-			debug("Root: %+v\n", entity)
-
-			if entity.organId == 0 {
-				panic(fmt.Sprintf("Root with id 0: %+v", entity))
-			}
 		}
 
 		globalState.Entities[i] = entity
@@ -2296,7 +2290,6 @@ func main() {
 	// width: columns in the game grid
 	// height: rows in the game grid
 	fmt.Fscan(reader, &globalState.Width, &globalState.Height)
-	debug("%d %d\n", globalState.Width, globalState.Height)
 
 	for {
 		parseTurnState(reader)
