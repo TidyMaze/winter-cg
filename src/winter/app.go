@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"sort"
 )
@@ -499,7 +500,7 @@ type SporePlan struct {
 	target         Coord  // the target coord of the sporer (either a protein or a neighbor of a protein)
 }
 
-func parseTurnState() {
+func parseTurnState(reader io.Reader) {
 	globalState.Grid = make([][]*Entity, globalState.Height)
 	for i := 0; i < globalState.Height; i++ {
 		globalState.Grid[i] = make([]*Entity, globalState.Width)
@@ -509,7 +510,7 @@ func parseTurnState() {
 	}
 
 	var entityCount int
-	fmt.Scan(&entityCount)
+	fmt.Fscan(reader, &entityCount)
 
 	globalState.Entities = make([]Entity, entityCount)
 
@@ -524,7 +525,7 @@ func parseTurnState() {
 		var owner, organId int
 		var organDir string
 		var organParentId, organRootId int
-		fmt.Scan(&x, &y, &_type, &owner, &organId, &organDir, &organParentId, &organRootId)
+		fmt.Fscan(reader, &x, &y, &_type, &owner, &organId, &organDir, &organParentId, &organRootId)
 
 		// debug("x: %d, y: %d, type: %s, owner: %d, organId: %d, organDir: %s, organParentId: %d, organRootId: %d\n", x, y, _type, owner, organId, organDir, organParentId, organRootId)
 
@@ -569,7 +570,7 @@ func parseTurnState() {
 
 	// myD: your protein stock
 	var myA, myB, myC, myD int
-	fmt.Scan(&myA, &myB, &myC, &myD)
+	fmt.Fscan(reader, &myA, &myB, &myC, &myD)
 
 	debug("My proteins: A: %d, B: %d, C: %d, D: %d\n", myA, myB, myC, myD)
 
@@ -580,7 +581,7 @@ func parseTurnState() {
 
 	// oppD: opponent's protein stock
 	var oppA, oppB, oppC, oppD int
-	fmt.Scan(&oppA, &oppB, &oppC, &oppD)
+	fmt.Fscan(reader, &oppA, &oppB, &oppC, &oppD)
 
 	debug("Opponent proteins: A: %d, B: %d, C: %d, D: %d\n", oppA, oppB, oppC, oppD)
 
@@ -591,7 +592,7 @@ func parseTurnState() {
 
 	// requiredActionsCount: your number of organisms, output an action for each one in any order
 	var requiredActionsCount int
-	fmt.Scan(&requiredActionsCount)
+	fmt.Fscan(reader, &requiredActionsCount)
 
 	debug("Required actions count: %d\n", requiredActionsCount)
 
@@ -2289,12 +2290,15 @@ func findSporeCellInDirection(s State, coord Coord, dir Dir, sporeCells [][]bool
 }
 
 func main() {
+
+	reader := os.Stdin
+
 	// width: columns in the game grid
 	// height: rows in the game grid
-	fmt.Scan(&globalState.Width, &globalState.Height)
+	fmt.Fscan(reader, &globalState.Width, &globalState.Height)
 
 	for {
-		parseTurnState()
+		parseTurnState(reader)
 		sendActions()
 	}
 }
