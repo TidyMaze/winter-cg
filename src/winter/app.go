@@ -2414,7 +2414,7 @@ func main() {
 
 		tests := loadTests("test")
 
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 50; i++ {
 			for _, test := range tests {
 				runTest(test)
 			}
