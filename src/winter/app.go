@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 /**
@@ -692,6 +693,13 @@ func (a SporeAction) String() string {
 	return fmt.Sprintf("Spore at %+v with sporer %d, message: %s", a.coord, a.sporerId, a.message)
 }
 
+func sendActionsTimed(s State) {
+	start := time.Now()
+	sendActions(s)
+	elapsed := time.Since(start)
+	debug("Elapsed: %s\n", elapsed)
+}
+
 func sendActions(s State) {
 	// find all roots
 	var roots []Entity
@@ -850,7 +858,7 @@ func findBestActions(s State, roots []Entity, enemyTentaclesTargets [][]bool) Pl
 
 	// print top N combinations with score
 
-	topN := 50
+	topN := 5
 	debug("Top %d combinations\n", topN)
 	for i, actions := range allActionsCombinations {
 		if i < topN {
@@ -2384,7 +2392,7 @@ func runTest(test Test) {
 
 	state := parseTurnState(reader, width, height)
 
-	sendActions(state)
+	sendActionsTimed(state)
 }
 
 func main() {
@@ -2416,7 +2424,7 @@ func mainCG() {
 
 	for {
 		s := parseTurnState(reader, width, height)
-		sendActions(s)
+		sendActionsTimed(s)
 	}
 }
 
