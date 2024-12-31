@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"sort"
 	"strings"
 	"time"
@@ -2401,11 +2402,23 @@ func main() {
 	debug("Local: %v\n", local)
 
 	if local {
+
+		profilerFilePath := "cpu.prof"
+		profilerFile, err := os.Create(profilerFilePath)
+
+		if err != nil {
+			panic(err)
+		}
+
+		pprof.StartCPUProfile(profilerFile)
+
 		tests := loadTests("test")
 
 		for _, test := range tests {
 			runTest(test)
 		}
+
+		pprof.StopCPUProfile()
 	} else {
 		mainCG()
 	}
