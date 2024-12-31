@@ -1214,7 +1214,7 @@ func applyActions(s State, actions []Action) State {
 					panic(fmt.Sprintf("Entity at %+v is not a protein (%+v). When applying grow actions %+v", a.coord, showOrganType(oldEntityAtCoord._type), actions))
 				}
 
-				takeProteinByCrushing(oldEntityAtCoord, newState)
+				takeProteinByCrushing(oldEntityAtCoord, &newState)
 
 				newState.Grid[a.coord.y][a.coord.x] = nil
 
@@ -1285,7 +1285,7 @@ func applyActions(s State, actions []Action) State {
 					panic(fmt.Sprintf("Entity at %+v is not a protein (%+v). When applying spore actions %+v", a.coord, showOrganType(oldEntityAtCoord._type), actions))
 				}
 
-				takeProteinByCrushing(oldEntityAtCoord, newState)
+				takeProteinByCrushing(oldEntityAtCoord, &newState)
 
 				newState.Grid[a.coord.y][a.coord.x] = nil
 
@@ -1307,7 +1307,7 @@ func applyActions(s State, actions []Action) State {
 	return newState
 }
 
-func takeProteinByCrushing(oldEntityAtCoord *Entity, newState State) {
+func takeProteinByCrushing(oldEntityAtCoord *Entity, newState *State) {
 	if oldEntityAtCoord._type.isProtein() {
 		// get the proteins of the protein source (3 proteins per source)
 		newState.MyProteins[oldEntityAtCoord._type-PROTEIN_A] += 3
