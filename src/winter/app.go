@@ -1204,6 +1204,9 @@ func applyActions(s State, actions []Action) State {
 			}
 
 			oldEntityAtCoord := newState.Grid[a.coord.y][a.coord.x]
+
+			walled := false
+
 			if oldEntityAtCoord != nil {
 
 				if oldEntityAtCoord.coord != a.coord {
@@ -1211,10 +1214,24 @@ func applyActions(s State, actions []Action) State {
 				}
 
 				if oldEntityAtCoord._type != PROTEIN_A && oldEntityAtCoord._type != PROTEIN_B && oldEntityAtCoord._type != PROTEIN_C && oldEntityAtCoord._type != PROTEIN_D {
-					panic(fmt.Sprintf("Entity at %+v is not a protein (%+v). When applying grow actions %+v", a.coord, showOrganType(oldEntityAtCoord._type), actions))
+					// we tried to grow on an entity that appeared this turn
+					// instead of a new organ, we grow a wall and no player gets the protein
+
+					newEntity = Entity{
+						coord:         a.coord,
+						_type:         WALL,
+						owner:         NONE,
+						organId:       newOrganId,
+						organDir:      N,
+						organParentId: 0,
+					}
+
+					walled = true
 				}
 
-				takeProteinByCrushing(oldEntityAtCoord, &newState)
+				if !walled {
+					takeProteinByCrushing(oldEntityAtCoord, &newState)
+				}
 
 				newState.Grid[a.coord.y][a.coord.x] = nil
 
@@ -1276,16 +1293,33 @@ func applyActions(s State, actions []Action) State {
 
 			oldEntityAtCoord := newState.Grid[a.coord.y][a.coord.x]
 
+			walled := false
+
 			if oldEntityAtCoord != nil {
 				if oldEntityAtCoord.coord != a.coord {
 					panic(fmt.Sprintf("Old entity coord %+v different from new coord %+v", oldEntityAtCoord.coord, a.coord))
 				}
 
 				if oldEntityAtCoord._type != PROTEIN_A && oldEntityAtCoord._type != PROTEIN_B && oldEntityAtCoord._type != PROTEIN_C && oldEntityAtCoord._type != PROTEIN_D {
-					panic(fmt.Sprintf("Entity at %+v is not a protein (%+v). When applying spore actions %+v", a.coord, showOrganType(oldEntityAtCoord._type), actions))
+					// we tried to grow on an entity that appeared this turn
+					// instead of a new organ, we grow a wall and no player gets the protein
+
+					newEntity = Entity{
+						coord:         a.coord,
+						_type:         WALL,
+						owner:         NONE,
+						organId:       newOrganId,
+						organDir:      N,
+						organParentId: 0,
+						organRootId:   0,
+					}
+
+					walled = true
 				}
 
-				takeProteinByCrushing(oldEntityAtCoord, &newState)
+				if !walled {
+					takeProteinByCrushing(oldEntityAtCoord, &newState)
+				}
 
 				newState.Grid[a.coord.y][a.coord.x] = nil
 
