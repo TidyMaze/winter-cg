@@ -527,7 +527,7 @@ func parseTurnState(reader io.Reader) {
 		var organParentId, organRootId int
 		fmt.Fscan(reader, &x, &y, &_type, &owner, &organId, &organDir, &organParentId, &organRootId)
 
-		// debug("x: %d, y: %d, type: %s, owner: %d, organId: %d, organDir: %s, organParentId: %d, organRootId: %d\n", x, y, _type, owner, organId, organDir, organParentId, organRootId)
+		debug("%d %d %s %d %d %s %d %d\n", x, y, _type, owner, organId, organDir, organParentId, organRootId)
 
 		entity := Entity{
 			coord:         Coord{x, y},
@@ -572,7 +572,7 @@ func parseTurnState(reader io.Reader) {
 	var myA, myB, myC, myD int
 	fmt.Fscan(reader, &myA, &myB, &myC, &myD)
 
-	debug("My proteins: A: %d, B: %d, C: %d, D: %d\n", myA, myB, myC, myD)
+	debug("%d %d %d %d\n", myA, myB, myC, myD)
 
 	globalState.MyProteins[0] = myA
 	globalState.MyProteins[1] = myB
@@ -583,7 +583,7 @@ func parseTurnState(reader io.Reader) {
 	var oppA, oppB, oppC, oppD int
 	fmt.Fscan(reader, &oppA, &oppB, &oppC, &oppD)
 
-	debug("Opponent proteins: A: %d, B: %d, C: %d, D: %d\n", oppA, oppB, oppC, oppD)
+	debug("%d %d %d %d\n", oppA, oppB, oppC, oppD)
 
 	globalState.OppProteins[0] = oppA
 	globalState.OppProteins[1] = oppB
@@ -594,7 +594,7 @@ func parseTurnState(reader io.Reader) {
 	var requiredActionsCount int
 	fmt.Fscan(reader, &requiredActionsCount)
 
-	debug("Required actions count: %d\n", requiredActionsCount)
+	debug("%d\n", requiredActionsCount)
 
 	globalState.RequiredActionsCount = requiredActionsCount
 }
@@ -2296,6 +2296,7 @@ func main() {
 	// width: columns in the game grid
 	// height: rows in the game grid
 	fmt.Fscan(reader, &globalState.Width, &globalState.Height)
+	debug("%d %d\n", globalState.Width, globalState.Height)
 
 	for {
 		parseTurnState(reader)
