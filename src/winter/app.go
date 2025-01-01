@@ -2468,7 +2468,7 @@ func main() {
 
 		start := time.Now()
 
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 200; i++ {
 			for _, test := range tests {
 				runTest(test)
 			}
