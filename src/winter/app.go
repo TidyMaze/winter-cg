@@ -1205,6 +1205,22 @@ func findOrgans(s State, o Owner) []*Entity {
 }
 
 func applyActions(s State, actions []Action) State {
+	if len(actions) == 0 {
+		panic("No actions to apply")
+	}
+
+	allWait := true
+	for _, action := range actions {
+		if _, ok := action.(WaitAction); !ok {
+			allWait = false
+			break
+		}
+	}
+
+	if allWait {
+		return s
+	}
+
 	// copy the state
 	s.checkEntities()
 
