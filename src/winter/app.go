@@ -392,6 +392,10 @@ func (s State) checkEntities() {
 }
 
 func (s State) set(coord Coord, entity *Entity) {
+	if !coord.isValid(&s) {
+		panic(fmt.Sprintf("Invalid coord %+v", coord))
+	}
+
 	if entity != nil && entity.coord != coord {
 		panic(fmt.Sprintf("Entity %+v has a different coord %+v", entity, coord))
 	}
@@ -843,7 +847,7 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 
 		combinations := allCombinationsOfSlices(actionsPerRootSorted)
 
-		//debug("Combinations (%d)\n", len(combinations))
+		debug("Combinations (%d)\n", len(combinations))
 
 		// calculate the score of state after applying all the actions
 		playerActions := make([]PlayerActions, 0)
