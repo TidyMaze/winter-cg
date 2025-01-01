@@ -2010,31 +2010,18 @@ func findHarvestedProteins(s State) ([]*Entity, []*Entity) {
 
 	for _, entity := range s.Entities {
 		if entity._type.isProtein() {
-			// find my neighbor harvesters of this protein (must be facing the protein)
-			myHarvesters := make([]Entity, 0)
+			harvested := false
 			for _, offset := range offsets {
 				coord := entity.coord.add(offset)
-
 				if coord.isValid(s) {
-					if s.at(coord) != nil {
-						neighbor := s.at(coord)
-
-						if neighbor.coord != coord {
-							panic(fmt.Sprintf("Neighbor coord %+v different from new coord %+v", neighbor.coord, coord))
-						}
-
-						if neighbor._type == HARVESTER && neighbor.owner == ME {
-							if findDirRelativeTo(neighbor.coord, entity.coord) == neighbor.organDir {
-								myHarvesters = append(myHarvesters, *neighbor)
-							} else {
-								//debug("Neighbor harvester %+v is not facing the protein %+v\n", neighbor, entity)
-							}
-						}
+					neighbor := s.at(coord)
+					if neighbor != nil && neighbor._type == HARVESTER && neighbor.owner == ME && findDirRelativeTo(neighbor.coord, entity.coord) == neighbor.organDir {
+						harvested = true
+						break
 					}
 				}
 			}
-
-			if len(myHarvesters) > 0 {
+			if harvested {
 				harvestedProteins = append(harvestedProteins, entity)
 			} else {
 				nonHarvestedProteins = append(nonHarvestedProteins, entity)
@@ -2042,22 +2029,8 @@ func findHarvestedProteins(s State) ([]*Entity, []*Entity) {
 		}
 	}
 
-	//nonHarvestedProteinsCoords := make([]Coord, 0)
-	//harvestedProteinsCoords := make([]Coord, 0)
-	//
-	//for _, protein := range nonHarvestedProteins {
-	//	nonHarvestedProteinsCoords = append(nonHarvestedProteinsCoords, protein.coord)
-	//}
-	//
-	//for _, protein := range harvestedProteins {
-	//	harvestedProteinsCoords = append(harvestedProteinsCoords, protein.coord)
-	//}
-
-	//debug("%d Non-harvested proteins, %d Harvested proteins\n", len(nonHarvestedProteins), len(harvestedProteins))
-
 	return harvestedProteins, nonHarvestedProteins
 }
-
 func findGrowType(s State) EntityType {
 	// grow a tentacle if I have enough proteins, better for attack and defense
 	if s.MyProteins[1] >= 10 && s.MyProteins[2] >= 10 {
