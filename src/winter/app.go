@@ -189,7 +189,7 @@ func (c Coord) add(offset Coord) Coord {
 	return Coord{int8(int(c.x) + int(offset.x)), int8(int(c.y) + int(offset.y))}
 }
 
-func (c Coord) isValid(s State) bool {
+func (c Coord) isValid(s *State) bool {
 	return c.x >= int8(0) && c.x < int8(s.Width) && c.y >= int8(0) && c.y < int8(s.Height)
 }
 
@@ -1061,7 +1061,7 @@ func findDefendedDisputedCells(s State, disputedCellsMap [][]bool) []Coord {
 			// find the target of the tentacle
 			target := entity.coord.add(offsets[entity.organDir])
 
-			if target.isValid(s) {
+			if target.isValid(&s) {
 				if disputedCellsMap[target.y][target.x] {
 					cells = append(cells, target)
 				}
@@ -1105,7 +1105,7 @@ func buildDistanceMapForProtein(s State, protein Coord) [][]int {
 		for _, offset := range offsets {
 			neighbor := coord.add(offset)
 
-			if neighbor.isValid(s) && s.isWalkable(neighbor, true) && distances[neighbor.y][neighbor.x] == -1 {
+			if neighbor.isValid(&s) && s.isWalkable(neighbor, true) && distances[neighbor.y][neighbor.x] == -1 {
 				distances[neighbor.y][neighbor.x] = distances[coord.y][coord.x] + 1
 				queue = append(queue, neighbor)
 			}
@@ -1278,7 +1278,7 @@ func applyActions(s State, actions []Action) State {
 			// kill neighbors of tentacles
 			if a._type == TENTACLE {
 				neighborCoord := a.coord.add(offsets[a.dir])
-				if neighborCoord.isValid(newState) {
+				if neighborCoord.isValid(&newState) {
 					neighborEntity := newState.at(neighborCoord)
 					if neighborEntity != nil && neighborEntity.owner == OPPONENT {
 
@@ -1585,7 +1585,7 @@ func findGrowActions(s State, root *Entity, organ *Entity, enemyTentaclesTargets
 	// find all the possible grow actions for the organ
 	for _, offset := range offsets {
 		coord := organ.coord.add(offset)
-		if coord.isValid(s) && s.isWalkable(coord, false) && !enemyTentaclesTargets[coord.y][coord.x] {
+		if coord.isValid(&s) && s.isWalkable(coord, false) && !enemyTentaclesTargets[coord.y][coord.x] {
 			for _, _type := range []EntityType{BASIC, HARVESTER, TENTACLE, SPORER} {
 
 				if _type == BASIC && canGrow(s.MyProteins, BASIC) {
@@ -1680,7 +1680,7 @@ func findClosestOrganTo(s State, to []Coord, from Coord, tentacleTargets [][]boo
 
 		for _, offset := range offsets {
 			neighbor := current.add(offset)
-			if neighbor.isValid(s) &&
+			if neighbor.isValid(&s) &&
 				!visited[neighbor.y][neighbor.x] &&
 				!tentacleTargets[neighbor.y][neighbor.x] &&
 				(s.at(neighbor) == nil ||
@@ -1728,7 +1728,7 @@ func findClosestEnemyOrgan(s State, root Entity) Coord {
 
 		for _, offset := range offsets {
 			neighbor := current.add(offset)
-			if neighbor.isValid(s) && !visited[neighbor.y][neighbor.x] && (s.at(neighbor) == nil ||
+			if neighbor.isValid(&s) && !visited[neighbor.y][neighbor.x] && (s.at(neighbor) == nil ||
 				s.at(neighbor)._type.isProtein() ||
 				s.at(neighbor).owner != NONE) {
 				visited[neighbor.y][neighbor.x] = true
@@ -1787,7 +1787,7 @@ func findEnemyTentaclesTargets(s State) [][]bool {
 	for _, entity := range s.Entities {
 		if entity._type == TENTACLE && entity.owner == OPPONENT {
 			coord := entity.coord.add(offsets[entity.organDir])
-			if coord.isValid(s) {
+			if coord.isValid(&s) {
 				tentacleTargets[coord.y][coord.x] = true
 			}
 		}
@@ -1815,11 +1815,11 @@ func findTentacleAttacks(s State, organs []Entity, enemyTentaclesTargets [][]boo
 	for _, organ := range organs {
 		for _, offset := range offsets {
 			coord := organ.coord.add(offset)
-			if coord.isValid(s) && s.isWalkable(coord, false) && !enemyTentaclesTargets[coord.y][coord.x] {
+			if coord.isValid(&s) && s.isWalkable(coord, false) && !enemyTentaclesTargets[coord.y][coord.x] {
 				// check if there is an opponent organ in the direction of the offset
 				for _, dir := range []Dir{N, S, W, E} {
 					attackedCoord := coord.add(offsets[dir])
-					if attackedCoord.isValid(s) && s.at(attackedCoord) != nil {
+					if attackedCoord.isValid(&s) && s.at(attackedCoord) != nil {
 						attacked := s.at(attackedCoord)
 						if attacked.owner == OPPONENT {
 
@@ -1863,7 +1863,7 @@ func findDestroyed(s State, attacked Entity) []Entity {
 
 		for _, offset := range offsets {
 			neighbor := current.coord.add(offset)
-			if neighbor.isValid(s) && !visited[neighbor.y][neighbor.x] && s.at(neighbor) != nil {
+			if neighbor.isValid(&s) && !visited[neighbor.y][neighbor.x] && s.at(neighbor) != nil {
 				entity := s.at(neighbor)
 				if entity.organParentId == current.organId {
 					visited[neighbor.y][neighbor.x] = true
@@ -1964,7 +1964,7 @@ func buildSporeCellsMap(s State, nonHarvestedProteins []Entity) [][]bool {
 	for _, protein := range nonHarvestedProteins {
 		for _, offset := range offsets {
 			coord := protein.coord.add(offset)
-			if coord.isValid(s) && s.at(coord) == nil {
+			if coord.isValid(&s) && s.at(coord) == nil {
 				sporeCells[coord.y][coord.x] = true
 			}
 		}
@@ -1994,7 +1994,7 @@ func findHarvestedProteins(s State) ([]*Entity, []*Entity) {
 			harvested := false
 			for _, offset := range offsets {
 				coord := entity.coord.add(offset)
-				if coord.isValid(s) {
+				if coord.isValid(&s) {
 					neighbor := s.at(coord)
 					if neighbor != nil && neighbor._type == HARVESTER && neighbor.owner == ME && findDirRelativeTo(neighbor.coord, entity.coord) == neighbor.organDir {
 						harvested = true
@@ -2088,7 +2088,7 @@ func findShortestPath(s State, from, to []Coord, forbiddenCells [][]bool) []Coor
 
 		for _, offset := range offsets {
 			neighbor := current.add(offset)
-			if neighbor.isValid(s) && !visited[neighbor.y][neighbor.x] && !forbiddenCells[neighbor.y][neighbor.x] {
+			if neighbor.isValid(&s) && !visited[neighbor.y][neighbor.x] && !forbiddenCells[neighbor.y][neighbor.x] {
 				visited[neighbor.y][neighbor.x] = true
 				previous[neighbor.y][neighbor.x] = current
 				queue = append(queue, neighbor)
@@ -2194,7 +2194,7 @@ func findClosestNeighborToProtein(s State, protein Entity, organs []Entity, enem
 	for _, organ := range organs {
 		for _, offset := range offsets {
 			neighbor := organ.coord.add(offset)
-			if neighbor.isValid(s) &&
+			if neighbor.isValid(&s) &&
 				s.isWalkable(neighbor, false) &&
 				!enemyTentaclesTargets[neighbor.y][neighbor.x] {
 				dist := distance(neighbor, protein.coord)
@@ -2223,12 +2223,12 @@ func growSporerIfPossible(s State, sporeCells [][]bool, organs []Entity) bool {
 		for _, organ := range organs {
 			for _, offset := range offsets {
 				sporerCoord := organ.coord.add(offset)
-				if sporerCoord.isValid(s) && s.at(sporerCoord) == nil {
+				if sporerCoord.isValid(&s) && s.at(sporerCoord) == nil {
 					// simulate the spore in all directions until it reaches a spore cell
 					for _, dir := range []Dir{N, S, W, E} {
 						sporeCoord := findSporeCellInDirection(s, sporerCoord, dir, sporeCells)
 
-						if sporeCoord.isValid(s) &&
+						if sporeCoord.isValid(&s) &&
 							distance(sporerCoord, sporeCoord) > 5 {
 							debug("Organ: %+v can reach spore cell: %+v after sporing in direction: %s from cell: %+v\n", organ, sporeCoord, showDir(dir), sporerCoord)
 							sporerPlans = append(sporerPlans, SporePlan{
@@ -2271,7 +2271,7 @@ func sporeIfPossible(s State, sporeCells [][]bool) bool {
 		for _, entity := range s.Entities {
 			if entity._type == SPORER && entity.owner == ME {
 				sporeCooord := findSporeCellInDirection(s, entity.coord, entity.organDir, sporeCells)
-				if sporeCooord.isValid(s) {
+				if sporeCooord.isValid(&s) {
 					sporer = entity
 					sporeCoord = sporeCooord
 					break
@@ -2279,7 +2279,7 @@ func sporeIfPossible(s State, sporeCells [][]bool) bool {
 			}
 		}
 
-		if sporeCoord.isValid(s) {
+		if sporeCoord.isValid(&s) {
 			debug("Found a spore cell: %+v for sporer: %+v\n", sporeCoord, sporer)
 			fmt.Printf("SPORE %d %d %d\n", sporer.organId, sporeCoord.x, sporeCoord.y)
 			return true
@@ -2299,7 +2299,7 @@ func findReachableSporerCells(s State, from Coord, dir Dir) []Coord {
 	coord := from
 	for {
 		coord = coord.add(offsets[dir])
-		if !coord.isValid(s) {
+		if !coord.isValid(&s) {
 			break
 		}
 
@@ -2317,7 +2317,7 @@ func findSporeCellInDirection(s State, coord Coord, dir Dir, sporeCells [][]bool
 	sporeCoord := coord
 	for {
 		sporeCoord = sporeCoord.add(offsets[dir])
-		if !sporeCoord.isValid(s) {
+		if !sporeCoord.isValid(&s) {
 			break
 		}
 
