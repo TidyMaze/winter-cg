@@ -828,7 +828,20 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 		actionsPerRoot[root.organId] = findActionsForOrganism(&s, root, organs, enemyTentaclesTargets)
 
 		debug("Actions for root %d (%d):\n", root.organId, len(actionsPerRoot[root.organId]))
+
+		// score each individual actions and sort them by score
+
+		//for _, action := range actionsPerRoot[root.organId] {
+		//	debug("Scoring action %+v of root %d\n", action, root.organId)
+		//
+		//	score, detail := scoreActions(s, []Action{action}, proteinMap, disputedCellsMap)
+		//}
 	}
+
+	// protein map is built from the current state (stable)
+	harvested, nonHarvested := findHarvestedProteins(s)
+
+	proteinMap := buildProteinMap(s, nonHarvested, harvested)
 
 	for _, rootPermutation := range rootPermutations {
 		//debug("Root permutation #%d: %+v\n", iPerm, rootPermutation)
@@ -853,11 +866,6 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 
 		// calculate the score of state after applying all the actions
 		playerActions := make([]PlayerActions, 0)
-
-		// protein map is built from the current state (stable)
-		harvested, nonHarvested := findHarvestedProteins(s)
-
-		proteinMap := buildProteinMap(s, nonHarvested, harvested)
 
 		//debug("Protein map:\n%s", showProteinMap(s, proteinMap))
 
