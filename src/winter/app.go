@@ -1212,15 +1212,6 @@ func applyActions(s State, actions []Action) State {
 
 	newState.checkEntities()
 
-	growCoords := make([][]bool, s.Height)
-
-	for i := uint8(0); i < s.Height; i++ {
-		growCoords[i] = make([]bool, s.Width)
-		for j := uint8(0); j < s.Width; j++ {
-			growCoords[i][j] = false
-		}
-	}
-
 	// apply each action in order
 	for _, action := range actions {
 		switch a := action.(type) {
@@ -1283,10 +1274,6 @@ func applyActions(s State, actions []Action) State {
 			newState.checkEntities()
 
 			//debug("Grew organ %+v\n", newEntity)
-
-			if growCoords[a.coord.y][a.coord.x] {
-				panic(fmt.Sprintf("Already grew organ at %+v", a.coord))
-			}
 
 			// kill neighbors of tentacles
 			if a._type == TENTACLE {
