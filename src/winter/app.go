@@ -634,7 +634,7 @@ func parseTurnState(reader io.Reader, width uint8, height uint8) State {
 
 	debug("%d\n", requiredActionsCount)
 
-	debug("============")
+	debug("============\n")
 
 	state.RequiredActionsCount = requiredActionsCount
 
@@ -826,6 +826,8 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 
 		// find all possible actions for each organ
 		actionsPerRoot[root.organId] = findActionsForOrganism(&s, root, organs, enemyTentaclesTargets)
+
+		debug("Actions for root %d (%d):\n", root.organId, len(actionsPerRoot[root.organId]))
 	}
 
 	for _, rootPermutation := range rootPermutations {
