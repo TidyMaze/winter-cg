@@ -1006,7 +1006,7 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 	//detailScore := ""
 
 	// bonus for all covered cells by my sporers
-	sporerCoveredCells := len(findSporerCells(s))
+	sporerCoveredCells := findSporerCellsCount(s)
 
 	totalScore := float64(len(harvested)*4000) +
 		float64(len(nonHarvested)*10) -
@@ -1019,7 +1019,8 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 	return totalScore, detailScore
 }
 
-func findSporerCells(s State) []Coord {
+func findSporerCellsCount(s State) int {
+	count := 0
 	cells := make([]bool, s.Height*s.Width)
 
 	for _, entity := range s.Entities {
@@ -1028,23 +1029,15 @@ func findSporerCells(s State) []Coord {
 			reachable := findReachableSporerCells(s, entity.coord, entity.organDir)
 
 			for _, coord := range reachable {
-				cells[int(coord.y)*int(s.Width)+int(coord.x)] = true
+				if !cells[int(coord.y)*int(s.Width)+int(coord.x)] {
+					cells[int(coord.y)*int(s.Width)+int(coord.x)] = true
+					count++
+				}
 			}
 		}
 	}
 
-	// collect the cells
-	res := make([]Coord, 0)
-
-	for i := uint8(0); i < s.Height; i++ {
-		for j := uint8(0); j < s.Width; j++ {
-			if cells[int(i)*int(s.Width)+int(j)] {
-				res = append(res, Coord{int8(j), int8(i)})
-			}
-		}
-	}
-
-	return res
+	return count
 }
 
 func average(values []float64) float64 {
