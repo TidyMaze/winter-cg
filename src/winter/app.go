@@ -377,18 +377,18 @@ func (s State) at(coord Coord) *Entity {
 }
 
 func (s State) checkEntities() {
-	for i := 0; i < len(s.Grid); i++ {
-		if s.Grid[i] != nil {
-			entity := s.Grid[i]
-			x := i % int(s.Width)
-			y := i / int(s.Width)
-			c := Coord{int8(x), int8(y)}
-
-			if entity.coord != c {
-				panic(fmt.Sprintf("check E: Entity %+v has a different coord %+v", entity, c))
-			}
-		}
-	}
+	//for i := 0; i < len(s.Grid); i++ {
+	//	if s.Grid[i] != nil {
+	//		entity := s.Grid[i]
+	//		x := i % int(s.Width)
+	//		y := i / int(s.Width)
+	//		c := Coord{int8(x), int8(y)}
+	//
+	//		if entity.coord != c {
+	//			panic(fmt.Sprintf("check E: Entity %+v has a different coord %+v", entity, c))
+	//		}
+	//	}
+	//}
 }
 
 func (s State) set(coord Coord, entity *Entity) {
@@ -1003,6 +1003,7 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 	defendedDisputedCells := findDefendedDisputedCells(s, disputedCellsMap)
 
 	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %f, avgDistance: %f\n, my organs: %d, enemy organs: %d, protein score: %f\n, defended cells: %d", len(harvested), len(nonHarvested), totalDistance, avgDistance, len(myOrgans), len(enemyOrgans), proteinScore, len(defendedDisputedCells))
+	//detailScore := ""
 
 	// bonus for all covered cells by my sporers
 	sporerCoveredCells := len(findSporerCells(s))
@@ -1019,14 +1020,7 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 }
 
 func findSporerCells(s State) []Coord {
-	cells := make([][]bool, s.Height)
-
-	for i := uint8(0); i < s.Height; i++ {
-		cells[i] = make([]bool, s.Width)
-		for j := uint8(0); j < s.Width; j++ {
-			cells[i][j] = false
-		}
-	}
+	cells := make([]bool, s.Height*s.Width)
 
 	for _, entity := range s.Entities {
 		if entity._type == SPORER && entity.owner == ME {
@@ -1034,7 +1028,7 @@ func findSporerCells(s State) []Coord {
 			reachable := findReachableSporerCells(s, entity.coord, entity.organDir)
 
 			for _, coord := range reachable {
-				cells[coord.y][coord.x] = true
+				cells[int(coord.y)*int(s.Width)+int(coord.x)] = true
 			}
 		}
 	}
@@ -1044,7 +1038,7 @@ func findSporerCells(s State) []Coord {
 
 	for i := uint8(0); i < s.Height; i++ {
 		for j := uint8(0); j < s.Width; j++ {
-			if cells[i][j] {
+			if cells[int(i)*int(s.Width)+int(j)] {
 				res = append(res, Coord{int8(j), int8(i)})
 			}
 		}
