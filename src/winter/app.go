@@ -1616,18 +1616,38 @@ func findGrowActions(s State, root *Entity, organ *Entity, enemyTentaclesTargets
 					})
 				}
 
+				// directional organs
 				if (_type == HARVESTER && canGrow(s.MyProteins, HARVESTER)) ||
 					(_type == TENTACLE && canGrow(s.MyProteins, TENTACLE)) ||
 					(_type == SPORER && canGrow(s.MyProteins, SPORER)) {
 					for _, dir := range []Dir{N, S, W, E} {
-						actions = append(actions, GrowAction{
-							rootOrganId: root.organId,
-							organId:     organ.organId,
-							coord:       coord,
-							_type:       _type,
-							dir:         dir,
-							message:     "",
-						})
+
+						neighbor := coord.add(offsets[dir])
+
+						if neighbor.isValid(&s) {
+
+							// for harvester, if there is at least a protein in the neighbor cells then only allow to grow in direction of a protein (else only grow in N)
+							// for tentacle, never grow in direction of a WALL and if there is at least an enemy organ in the neighbor cells then only grow in direction of an enemy organ (else only grow in N)
+							// for sporer, never grow in direction of a WALL
+
+							if (_type == HARVESTER && s.at(neighbor) != nil && s.at(neighbor)._type.isProtein()) ||
+								// allow tentacle if neighbor is empty or is a protein (def)
+								(_type == TENTACLE && (s.at(neighbor) == nil || s.at(neighbor)._type.isProtein())) ||
+								// allow tentacle if neighbor is empty or is an enemy organ
+								(_type == TENTACLE && (s.at(neighbor) == nil || s.at(neighbor).owner == OPPONENT)) ||
+								// allow sporer if neighbor is empty or is a protein (never an organ or a wall)
+								(_type == SPORER && (s.at(neighbor) == nil || s.at(neighbor)._type.isProtein())) {
+
+								actions = append(actions, GrowAction{
+									rootOrganId: root.organId,
+									organId:     organ.organId,
+									coord:       coord,
+									_type:       _type,
+									dir:         dir,
+									message:     "",
+								})
+							}
+						}
 					}
 				}
 			}
@@ -2448,7 +2468,7 @@ func main() {
 
 		start := time.Now()
 
-		for i := 0; i < 50; i++ {
+		for i := 0; i < 100; i++ {
 			for _, test := range tests {
 				runTest(test)
 			}
