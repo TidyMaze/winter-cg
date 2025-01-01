@@ -952,8 +952,8 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 	// score is the number of harvested proteins plus the number of organs
 	harvested, nonHarvested := findHarvestedProteins(s)
 
-	myOrgans := findOrgans(s, ME)
-	enemyOrgans := findOrgans(s, OPPONENT)
+	myOrgans := findOrgans(&s, ME)
+	enemyOrgans := findOrgans(&s, OPPONENT)
 
 	//enemyTentaclesTargets := findEnemyTentaclesTargets(s)
 
@@ -1194,7 +1194,7 @@ func buildProteinMap(s State, nonHarvestedProteins []*Entity, harvestedProteins 
 }
 
 // my organs (any root)
-func findOrgans(s State, o Owner) []*Entity {
+func findOrgans(s *State, o Owner) []*Entity {
 	organs := make([]*Entity, 0)
 	for _, entity := range s.Entities {
 		if entity.owner == o {
@@ -1489,8 +1489,8 @@ func findDisputedCells(s State) [][]bool {
 		}
 	}
 
-	myOrgans := findOrgans(s, ME)
-	enemyOrgans := findOrgans(s, OPPONENT)
+	myOrgans := findOrgans(&s, ME)
+	enemyOrgans := findOrgans(&s, OPPONENT)
 
 	myOrgansCoords := make([]Coord, 0)
 	for _, organ := range myOrgans {
