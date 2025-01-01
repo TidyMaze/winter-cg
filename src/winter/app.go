@@ -805,12 +805,12 @@ type PlayerActions struct {
 func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) PlayerActions {
 	allActionsCombinations := make([]PlayerActions, 0)
 
-	debug("Permuting roots %+v\n", roots)
+	//debug("Permuting roots %+v\n", roots)
 
 	// find all permutations of the N roots (ex: [[1,2,3], [1,3,2], [2,1,3], [2,3,1], [3,1,2], [3,2,1]])
 	rootPermutations := permute(roots)
 
-	debug("Root permutations (%d):\n", len(rootPermutations))
+	//debug("Root permutations (%d):\n", len(rootPermutations))
 
 	// for each root, find all possible actions for each organ
 
@@ -824,8 +824,8 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 		actionsPerRoot[root.organId] = findActionsForOrganism(&s, root, organs, enemyTentaclesTargets)
 	}
 
-	for iPerm, rootPermutation := range rootPermutations {
-		debug("Root permutation #%d: %+v\n", iPerm, rootPermutation)
+	for _, rootPermutation := range rootPermutations {
+		//debug("Root permutation #%d: %+v\n", iPerm, rootPermutation)
 
 		// once we know the order of roots, we can combine all the actions of each root
 		actionsPerRootSorted := make([][]Action, 0)
@@ -833,17 +833,17 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 			actionsPerRootSorted = append(actionsPerRootSorted, actionsPerRoot[root.organId])
 		}
 
-		debug("Actions per root sorted (%d):\n", len(actionsPerRootSorted))
-		for iRoot, actions := range actionsPerRootSorted {
-			debug("Root %d: %d actions\n", iRoot, len(actions))
-			//for iAction, action := range actions {
-			//	debug("Action %d: %+v\n", iAction, action)
-			//}
-		}
+		//debug("Actions per root sorted (%d):\n", len(actionsPerRootSorted))
+		//for iRoot, actions := range actionsPerRootSorted {
+		//debug("Root %d: %d actions\n", iRoot, len(actions))
+		//for iAction, action := range actions {
+		//	debug("Action %d: %+v\n", iAction, action)
+		//}
+		//}
 
 		combinations := allCombinationsOfSlices(actionsPerRootSorted)
 
-		debug("Combinations (%d)\n", len(combinations))
+		//debug("Combinations (%d)\n", len(combinations))
 
 		// calculate the score of state after applying all the actions
 		playerActions := make([]PlayerActions, 0)
@@ -853,11 +853,11 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 
 		proteinMap := buildProteinMap(s, nonHarvested, harvested)
 
-		debug("Protein map:\n%s", showProteinMap(s, proteinMap))
+		//debug("Protein map:\n%s", showProteinMap(s, proteinMap))
 
 		disputedCellsMap := findDisputedCells(s)
 
-		debug("Disputed cells map:\n%s", showDisputedCellsMap(s, disputedCellsMap))
+		//debug("Disputed cells map:\n%s", showDisputedCellsMap(s, disputedCellsMap))
 
 		for _, actions := range combinations {
 			//debug("%d actions for comb (%d), ", len(actions), iComb)
@@ -1168,7 +1168,7 @@ func buildProteinMap(s State, nonHarvestedProteins []*Entity, harvestedProteins 
 
 	normalizedTurnIncome := normalizeArray(turnIncome)
 
-	debug("Normalized turn income: %+v\n", normalizedTurnIncome)
+	//debug("Normalized turn income: %+v\n", normalizedTurnIncome)
 
 	finalMap := make([][]float64, s.Height)
 
@@ -2463,6 +2463,8 @@ func main() {
 		//}
 
 		//pprof.StartCPUProfile(profilerFile)
+
+		time.Sleep(2 * time.Second)
 
 		tests := loadTests("test")
 
