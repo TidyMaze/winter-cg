@@ -2313,8 +2313,13 @@ func findReachableSporerCells(s State, from Coord, dir Dir) []Coord {
 	reachableCells := make([]Coord, 0)
 
 	coord := from
+
+	dist := 0
+
 	for {
 		coord = coord.add(offsets[dir])
+		dist++
+
 		if !coord.isValid(&s) {
 			break
 		}
@@ -2323,7 +2328,10 @@ func findReachableSporerCells(s State, from Coord, dir Dir) []Coord {
 			break
 		}
 
-		reachableCells = append(reachableCells, coord)
+		// only consider long distance spore
+		if dist > 5 {
+			reachableCells = append(reachableCells, coord)
+		}
 	}
 
 	return reachableCells
