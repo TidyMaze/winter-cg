@@ -1426,9 +1426,10 @@ func copyState(s State) State {
 
 	// copy entities
 	for i, entity := range s.Entities {
-		entityCopy := *entity
-		newState.Entities[i] = &entityCopy
-		newState.set(entity.coord, &entityCopy)
+		// keep the same entity (shallow copy)
+		entityCopy := entity
+		newState.Entities[i] = entityCopy
+		newState.set(entity.coord, entityCopy)
 	}
 
 	// copy proteins
