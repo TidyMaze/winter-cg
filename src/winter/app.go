@@ -821,7 +821,7 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 		organs := findOrgansOfOrganism(s, root)
 
 		// find all possible actions for each organ
-		actionsPerRoot[root.organId] = findActionsForOrganism(s, root, organs, enemyTentaclesTargets)
+		actionsPerRoot[root.organId] = findActionsForOrganism(&s, root, organs, enemyTentaclesTargets)
 	}
 
 	for iPerm, rootPermutation := range rootPermutations {
@@ -1536,7 +1536,7 @@ func findDisputedCells(s State) [][]bool {
 	return disputedCells
 }
 
-func findActionsForOrganism(s State, root *Entity, organs []*Entity, enemyTentaclesTargets [][]bool) []Action {
+func findActionsForOrganism(s *State, root *Entity, organs []*Entity, enemyTentaclesTargets [][]bool) []Action {
 	actions := make([]Action, 0)
 
 	for _, organ := range organs {
@@ -1551,15 +1551,15 @@ func findActionsForOrganism(s State, root *Entity, organs []*Entity, enemyTentac
 	return actions
 }
 
-func findActionsForOrgan(s State, root *Entity, organ *Entity, enemyTentaclesTargets [][]bool) []Action {
+func findActionsForOrgan(s *State, root *Entity, organ *Entity, enemyTentaclesTargets [][]bool) []Action {
 	actions := make([]Action, 0)
 
 	// find the grow actions
-	growActions := findGrowActions(s, root, organ, enemyTentaclesTargets)
+	growActions := findGrowActions(*s, root, organ, enemyTentaclesTargets)
 	actions = append(actions, growActions...)
 
 	// find the spore actions
-	sporeActions := findSporeActions(s, root, organ, enemyTentaclesTargets)
+	sporeActions := findSporeActions(*s, root, organ, enemyTentaclesTargets)
 	actions = append(actions, sporeActions...)
 
 	return actions
