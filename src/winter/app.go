@@ -843,6 +843,8 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 
 	proteinMap := buildProteinMap(s, nonHarvested, harvested)
 
+	disputedCellsMap := findDisputedCells(s)
+
 	for _, rootPermutation := range rootPermutations {
 		//debug("Root permutation #%d: %+v\n", iPerm, rootPermutation)
 
@@ -868,8 +870,6 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 		playerActions := make([]PlayerActions, 0)
 
 		//debug("Protein map:\n%s", showProteinMap(s, proteinMap))
-
-		disputedCellsMap := findDisputedCells(s)
 
 		//debug("Disputed cells map:\n%s", showDisputedCellsMap(s, disputedCellsMap))
 
