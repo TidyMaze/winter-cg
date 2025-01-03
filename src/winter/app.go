@@ -839,7 +839,7 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 		// find all possible actions for each organ
 		singleActions := findActionsForOrganism(&s, root, organs, enemyTentaclesTargets)
 
-		debug("Actions for root %d (%d):\n", root.organId, len(actionsPerRoot[root.organId]))
+		//debug("Actions for root %d (%d):\n", root.organId, len(actionsPerRoot[root.organId]))
 
 		// score each individual actions and sort them by score
 
@@ -867,10 +867,10 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 			actionsPerRoot[root.organId] = actionsPerRoot[root.organId][:MaxActionsPerRoot]
 		}
 
-		debug("Actions for root %d sorted (%d):\n", root.organId, len(actionsPerRoot[root.organId]))
-		for i, action := range actionsPerRoot[root.organId] {
-			debug("Action %d: %+v\n", i, action)
-		}
+		debug("Reducing: Actions for root %d sorted (%d):\n", root.organId, len(actionsPerRoot[root.organId]))
+		//for i, action := range actionsPerRoot[root.organId] {
+		//	debug("Reducing: Action %d: %+v\n", i, action)
+		//}
 	}
 
 	for _, rootPermutation := range rootPermutations {
