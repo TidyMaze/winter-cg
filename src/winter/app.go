@@ -400,7 +400,7 @@ func (s State) set(coord Coord, entity *Entity) {
 		panic(fmt.Sprintf("Entity %+v has a different coord %+v", entity, coord))
 	}
 
-	debug("Grid size: %d\n", len(s.Grid))
+	//debug("Grid size: %d\n", len(s.Grid))
 
 	s.Grid[int(coord.y)*int(s.Width)+int(coord.x)] = entity
 }
