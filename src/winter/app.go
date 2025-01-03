@@ -844,7 +844,7 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 		// score each individual actions and sort them by score
 
 		for _, action := range singleActions {
-			debug("Scoring action %+v of root %d\n", action, root.organId)
+			//debug("Scoring action %+v of root %d\n", action, root.organId)
 
 			score, detail := scoreActions(s, []Action{action}, proteinMap, disputedCellsMap)
 
