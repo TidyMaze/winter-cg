@@ -546,7 +546,7 @@ func parseTurnState(reader io.Reader, width uint8, height uint8) State {
 	state.Width = width
 	state.Height = height
 
-	state.Grid = make([]*Entity, state.Height*state.Width)
+	state.Grid = make([]*Entity, int(state.Height)*int(state.Width))
 
 	for i := 0; i < len(state.Grid); i++ {
 		state.Grid[i] = nil
@@ -1070,7 +1070,7 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 
 func findSporerCellsCount(s State) int {
 	count := 0
-	cells := make([]bool, s.Height*s.Width)
+	cells := make([]bool, int(s.Height)*int(s.Width))
 
 	for _, entity := range s.Entities {
 		if entity._type == SPORER && entity.owner == ME {
