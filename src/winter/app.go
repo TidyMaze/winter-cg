@@ -861,7 +861,7 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 		})
 
 		// keep only the best individual actions
-		MaxActionsPerRoot := 512
+		MaxActionsPerRoot := 8
 
 		if len(actionsPerRoot[root.organId]) > MaxActionsPerRoot {
 			actionsPerRoot[root.organId] = actionsPerRoot[root.organId][:MaxActionsPerRoot]
