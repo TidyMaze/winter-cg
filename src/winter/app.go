@@ -806,6 +806,12 @@ type PlayerActions struct {
 	detail  string
 }
 
+type SingleActionWithScore struct {
+	action Action
+	score  float64
+	detail string
+}
+
 func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) PlayerActions {
 	allActionsCombinations := make([]PlayerActions, 0)
 
@@ -816,28 +822,6 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 
 	//debug("Root permutations (%d):\n", len(rootPermutations))
 
-	// for each root, find all possible actions for each organ
-
-	actionsPerRoot := make(map[uint16][]Action)
-
-	for _, root := range roots {
-		// find all organs of the root
-		organs := findOrgansOfOrganism(s, root)
-
-		// find all possible actions for each organ
-		actionsPerRoot[root.organId] = findActionsForOrganism(&s, root, organs, enemyTentaclesTargets)
-
-		debug("Actions for root %d (%d):\n", root.organId, len(actionsPerRoot[root.organId]))
-
-		// score each individual actions and sort them by score
-
-		//for _, action := range actionsPerRoot[root.organId] {
-		//	debug("Scoring action %+v of root %d\n", action, root.organId)
-		//
-		//	score, detail := scoreActions(s, []Action{action}, proteinMap, disputedCellsMap)
-		//}
-	}
-
 	// protein map is built from the current state (stable)
 	harvested, nonHarvested := findHarvestedProteins(s)
 
@@ -845,11 +829,55 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 
 	disputedCellsMap := findDisputedCells(s)
 
+	// for each root, find all possible actions for each organ
+	actionsPerRoot := make(map[uint16][]SingleActionWithScore)
+
+	for _, root := range roots {
+		// find all organs of the root
+		organs := findOrgansOfOrganism(s, root)
+
+		// find all possible actions for each organ
+		singleActions := findActionsForOrganism(&s, root, organs, enemyTentaclesTargets)
+
+		debug("Actions for root %d (%d):\n", root.organId, len(actionsPerRoot[root.organId]))
+
+		// score each individual actions and sort them by score
+
+		for _, action := range singleActions {
+			debug("Scoring action %+v of root %d\n", action, root.organId)
+
+			score, detail := scoreActions(s, []Action{action}, proteinMap, disputedCellsMap)
+
+			actionsPerRoot[root.organId] = append(actionsPerRoot[root.organId], SingleActionWithScore{
+				action: action,
+				score:  score,
+				detail: detail,
+			})
+		}
+
+		// sort the actions by score desc
+		sort.Slice(actionsPerRoot[root.organId], func(i, j int) bool {
+			return actionsPerRoot[root.organId][i].score > actionsPerRoot[root.organId][j].score
+		})
+
+		// keep only the best individual actions
+		MaxActionsPerRoot := 512
+
+		if len(actionsPerRoot[root.organId]) > MaxActionsPerRoot {
+			actionsPerRoot[root.organId] = actionsPerRoot[root.organId][:MaxActionsPerRoot]
+		}
+
+		debug("Actions for root %d sorted (%d):\n", root.organId, len(actionsPerRoot[root.organId]))
+		for i, action := range actionsPerRoot[root.organId] {
+			debug("Action %d: %+v\n", i, action)
+		}
+	}
+
 	for _, rootPermutation := range rootPermutations {
 		//debug("Root permutation #%d: %+v\n", iPerm, rootPermutation)
 
 		// once we know the order of roots, we can combine all the actions of each root
-		actionsPerRootSorted := make([][]Action, 0)
+		actionsPerRootSorted := make([][]SingleActionWithScore, 0)
 		for _, root := range rootPermutation {
 			actionsPerRootSorted = append(actionsPerRootSorted, actionsPerRoot[root.organId])
 		}
@@ -876,11 +904,16 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 		for _, actions := range combinations {
 			//debug("%d actions for comb (%d), ", len(actions), iComb)
 
+			plainActions := make([]Action, 0)
+			for _, a := range actions {
+				plainActions = append(plainActions, a.action)
+			}
+
 			s.checkEntities()
-			score, detail := scoreActions(s, actions, proteinMap, disputedCellsMap)
+			score, detail := scoreActions(s, plainActions, proteinMap, disputedCellsMap)
 
 			playerActions = append(playerActions, PlayerActions{
-				actions: actions,
+				actions: plainActions,
 				score:   score,
 				detail:  detail,
 			})
