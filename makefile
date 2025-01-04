@@ -15,4 +15,4 @@ profile:
 profile-mem:
 	make build
 	make run-local & sleep 1
-	go tool pprof --alloc_space -http=:8081 http://localhost:6060/debug/pprof/heap?seconds=5
+	go tool pprof --alloc_space -http=:8081 http://localhost:6060/debug/pprof/heap?seconds=10

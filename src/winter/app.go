@@ -863,7 +863,7 @@ func findBestActions(s State, roots []*Entity, enemyTentaclesTargets [][]bool) P
 		})
 
 		// keep only the best individual actions
-		MaxActionsPerRoot := 8
+		MaxActionsPerRoot := 64
 
 		if len(actionsPerRoot[root.organId]) > MaxActionsPerRoot {
 			actionsPerRoot[root.organId] = actionsPerRoot[root.organId][:MaxActionsPerRoot]
@@ -2519,10 +2519,12 @@ func main() {
 
 		start := time.Now()
 
-		for i := 0; i < 200; i++ {
+		MaxRun := 50
+		for i := 0; i < MaxRun; i++ {
 			for _, test := range tests {
 				runTest(test)
 			}
+			println(fmt.Sprintf("Elapsed for %d / %d (%f%%): %s\n", i+1, MaxRun, float64(i+1)/float64(MaxRun)*100, time.Since(start)))
 		}
 
 		elapsed := time.Since(start)
