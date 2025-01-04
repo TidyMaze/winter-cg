@@ -1041,8 +1041,8 @@ func scoreState(s State, proteinsMap [][]float64, disputedCellsMap [][]bool) (fl
 
 	defendedDisputedCells := findDefendedDisputedCells(s, disputedCellsMap)
 
-	detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %f, avgDistance: %f\n, my organs: %d, enemy organs: %d, protein score: %f\n, defended cells: %d", len(harvested), len(nonHarvested), totalDistance, avgDistance, len(myOrgans), len(enemyOrgans), proteinScore, len(defendedDisputedCells))
-	//detailScore := ""
+	//detailScore := fmt.Sprintf("Score detail: harvested: %d, non-harvested: %d, total distance: %f, avgDistance: %f\n, my organs: %d, enemy organs: %d, protein score: %f\n, defended cells: %d", len(harvested), len(nonHarvested), totalDistance, avgDistance, len(myOrgans), len(enemyOrgans), proteinScore, len(defendedDisputedCells))
+	detailScore := ""
 
 	// bonus for all covered cells by my sporers
 	sporerCoveredCells := findSporerCellsCount(s)
