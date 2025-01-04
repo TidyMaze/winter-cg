@@ -1470,9 +1470,10 @@ func maxOrganId(entities []*Entity) uint16 {
 
 func copyState(s State) State {
 	newState := State{
-		Height:               s.Height,
-		Width:                s.Width,
-		Entities:             make([]*Entity, len(s.Entities)),
+		Height: s.Height,
+		Width:  s.Width,
+		// cap at 2 more entities than the current state to avoid reallocation when adding new entities
+		Entities:             make([]*Entity, len(s.Entities), len(s.Entities)+2),
 		Grid:                 make([]*Entity, len(s.Grid)),
 		MyProteins:           make([]uint16, 4),
 		OppProteins:          make([]uint16, 4),
