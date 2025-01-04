@@ -392,16 +392,6 @@ func (s State) checkEntities() {
 }
 
 func (s State) set(coord Coord, entity *Entity) {
-	if !coord.isValid(&s) {
-		panic(fmt.Sprintf("Invalid coord %+v", coord))
-	}
-
-	if entity != nil && entity.coord != coord {
-		panic(fmt.Sprintf("Entity %+v has a different coord %+v", entity, coord))
-	}
-
-	//debug("Grid size: %d\n", len(s.Grid))
-
 	s.Grid[int(coord.y)*int(s.Width)+int(coord.x)] = entity
 }
 
